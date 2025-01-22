@@ -4,6 +4,7 @@
 local plr = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("StarterGui")
 -----------------------------------------------------------------------------------------------------------------
 
 -- Setup --------------------------------------------------------------------------------------------------------
@@ -132,7 +133,6 @@ CashESP.Activated:Connect(function()
 			local part = d:FindFirstChild("Root")
 			if part:IsA("BasePart") then
 				CreateESP(part, Color3.new(0, 1, 0))
-				print("Cash")
 			end
 		end
 	end
@@ -224,10 +224,28 @@ LookAtMissionBoard3.Activated:Connect(function()
 	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild("3"):WaitForChild("MissionBoard")
 	lookAtBoard(board)
 end)
+
+local MonitorChat = createButton("Chat Monitor")
+local chatMonitor = false
+local chatEvent = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ToClient"):WaitForChild("Chat")
+if chatEvent then
+    chatEvent.OnClientEvent:Connect(function(plr, part, message)
+        if chatMonitor then
+            print(plr.Name .. " sent: ".. message)
+            CoreGui:SetCore("SendNotification", {
+                Title = plr.Name;
+                Text = message;
+                Duration = 3;
+            })
+        end
+    end)
+end
+MonitorChat.Activated:Connect(function()
+    chatMonitor = not chatMonitor
+end)
 -----------------------------------------------------------------------------------------------------------------
 
 -- Credit Notification ------------------------------------------------------------------------------------------
-local CoreGui = game:GetService("StarterGui")
 CoreGui:SetCore("SendNotification", {
 	Title = "No Big Deal Cheat Injected";
 	Text = "Made by Eri";
