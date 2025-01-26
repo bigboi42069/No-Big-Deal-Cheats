@@ -174,6 +174,18 @@ GrenadeESP.Activated:Connect(function()
 	end
 end)
 
+local SeltzerESP = createButton("Seltzer Bottle ESP")
+SeltzerESP.Activated:Connect(function()
+	for i, d in workspace:GetDescendants() do
+		if string.lower(d.Name) == "bottle" and d:IsA("Model") then
+			local part = d:FindFirstChild("Fluid")
+			if part:IsA("BasePart") then
+				CreateESP(part, Color3.new(0.666667, 0, 0.498039))
+			end
+		end
+	end
+end)
+
 local PlayerESP = createButton("Player ESP")
 PlayerESP.Activated:Connect(function()
 	for i, p in game.Players:GetPlayers() do
