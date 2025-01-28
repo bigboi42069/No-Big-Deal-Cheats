@@ -1,8 +1,8 @@
 -- Cheat made by Eri --------------------------------------------------------------------------------------------
 
 -- Settings -----------------------------------------------------------------------------------------------------
-local toggleShowKey = Enum.KeyCode.P
-local shutdownKey = Enum.KeyCode.U
+local toggleShowKey = Enum.KeyCode.RightBracket
+local shutdownKey = Enum.KeyCode.BackSlash
 local minESPsize = 2
 local lazerWidth = 0.05
 -----------------------------------------------------------------------------------------------------------------
@@ -327,7 +327,7 @@ end)
 local kickLazers = createButton("Kick-10 Lazers")
 kickLazers.Activated:Connect(function()
     for i, g in workspace:GetChildren() do
-        if string.match(string.lower(g.Name), "mac10") and g:FindFirstChild("Root") then
+        if g.Name == "ToolboxMAC10" and g:FindFirstChild("Root") then
             addLaser(g:FindFirstChild("Root"))
         end
     end
@@ -346,6 +346,15 @@ local aceLazers = createButton("Ace Lazers")
 aceLazers.Activated:Connect(function()
     for i, g in workspace:GetChildren() do
         if g.Name == "AceCarbine" and g:FindFirstChild("Root") then
+            addLaser(g:FindFirstChild("Root"))
+        end
+    end
+end)
+
+local magnumLazers = createButton("Magnum Lazers")
+magnumLazers.Activated:Connect(function()
+    for i, g in workspace:GetChildren() do
+        if g.Name == "MAGNUM" and g:FindFirstChild("Root") then
             addLaser(g:FindFirstChild("Root"))
         end
     end
