@@ -1,5 +1,9 @@
 -- Cheat made by Eri --------------------------------------------------------------------------------------------
 
+-- Settings -----------------------------------------------------------------------------------------------------
+local lazerWidth = 0.05
+-----------------------------------------------------------------------------------------------------------------
+
 -- Global Variables ---------------------------------------------------------------------------------------------
 local plr = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -39,6 +43,7 @@ UIGradient.Parent = Main
 UIGridLayout.Parent = Main
 UIGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIGridLayout.CellSize = UDim2.new(0, 70, 0, 70)
+UIGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 UIPadding.Parent = Main
 UIPadding.PaddingBottom = UDim.new(0, 10)
@@ -105,7 +110,7 @@ uis.InputBegan:Connect(function(key)
 end)
 -----------------------------------------------------------------------------------------------------------------
 
--- ESP Handler --------------------------------------------------------------------------------------------------
+-- Functions ----------------------------------------------------------------------------------------------------
 local ESPCache = {}
 
 local function CreateESP(basepart, color)
@@ -126,6 +131,75 @@ local function CreateESP(basepart, color)
 	table.insert(ESPCache, newEspGui)
 end
 
+local function lookAtBoard(board)
+	local connection
+	local goin = true
+
+	task.delay(5, function()
+		goin = false
+		if connection then
+			connection:Disconnect()
+		end
+	end)
+
+	connection = RunService.RenderStepped:Connect(function()
+		if goin then
+			camera.CFrame = CFrame.new(board.CFrame.Position + board.CFrame.LookVector * 10, board.CFrame.Position)
+		end
+	end)
+end
+
+local function addLaser(part)
+    if not part or not part:IsA("BasePart") then
+        return
+    end
+
+    local laserPart = Instance.new("Part")
+    laserPart.Parent = workspace
+    laserPart.Anchored = true
+    laserPart.CanCollide = false
+    laserPart.CastShadow = false
+    laserPart.Material = Enum.Material.Neon
+    laserPart.Color = Color3.fromRGB(255, 0, 0)
+    laserPart.Size = Vector3.new(lazerWidth, lazerWidth, 1)
+
+    local function updateLaser()
+        if not part or not part.Parent then
+            laserPart:Destroy()
+            return
+        end
+
+        local startPos = part.Position + (part.CFrame.UpVector / 3.5)
+        local direction = part.CFrame.LookVector * 5000
+        local rayOrigin = startPos
+        local rayDirection = direction
+
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {part.Parent, workspace:WaitForChild(plr.Name)}
+        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+        raycastParams.IgnoreWater = true
+
+        local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+
+        if raycastResult then
+            local hitPoint = raycastResult.Position
+            local laserLength = (hitPoint - startPos).Magnitude
+
+            laserPart.Size = Vector3.new(lazerWidth, lazerWidth, laserLength)
+            laserPart.CFrame = CFrame.new(startPos, hitPoint) * CFrame.new(0, 0, -laserLength / 2)
+        else
+            local maxEnd = startPos + direction
+            local laserLength = (maxEnd - startPos).Magnitude
+
+            laserPart.Size = Vector3.new(lazerWidth, lazerWidth, laserLength)
+            laserPart.CFrame = CFrame.new(startPos, maxEnd) * CFrame.new(0, 0, -laserLength / 2)
+        end
+    end
+
+    game:GetService("RunService").Heartbeat:Connect(updateLaser)
+end
+
+-- Buttons ------------------------------------------------------------------------------------------------------
 local CashESP = createButton("Cash ESP")
 CashESP.Activated:Connect(function()
 	for i, d in workspace:GetDescendants() do
@@ -201,24 +275,6 @@ PlayerESP.Activated:Connect(function()
 	end
 end)
 
-local function lookAtBoard(board)
-	local connection
-	local goin = true
-
-	task.delay(5, function()
-		goin = false
-		if connection then
-			connection:Disconnect()
-		end
-	end)
-
-	connection = RunService.RenderStepped:Connect(function()
-		if goin then
-			camera.CFrame = CFrame.new(board.CFrame.Position + board.CFrame.LookVector * 10, board.CFrame.Position)
-		end
-	end)
-end
-
 local LookAtMissionBoard1 = createButton("Look At Alamont's Board")
 LookAtMissionBoard1.Activated:Connect(function()
 	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild("1"):WaitForChild("MissionBoard")
@@ -254,6 +310,42 @@ if chatEvent then
 end
 MonitorChat.Activated:Connect(function()
     chatMonitor = not chatMonitor
+end)
+
+local pistolLazers = createButton("Pistol Lazers")
+pistolLazers.Activated:Connect(function()
+    for i, g in workspace:GetChildren() do
+        if g.Name == "Pistol" or g.Name == "Snub" and g:FindFirstChild("Root") then
+            addLaser(g:FindFirstChild("Root"))
+        end
+    end
+end)
+
+local kickLazers = createButton("Kick-10 Lazers")
+kickLazers.Activated:Connect(function()
+    for i, g in workspace:GetChildren() do
+        if string.match(string.lower(g.Name), "mac10") and g:FindFirstChild("Root") then
+            addLaser(g:FindFirstChild("Root"))
+        end
+    end
+end)
+
+local carcosaLazers = createButton("Carcosa Rifle Lazers")
+carcosaLazers.Activated:Connect(function()
+    for i, g in workspace:GetChildren() do
+        if g.Name == "Sniper" and g:FindFirstChild("Root") then
+            addLaser(g:FindFirstChild("Root"))
+        end
+    end
+end)
+
+local aceLazers = createButton("Ace Lazers")
+aceLazers.Activated:Connect(function()
+    for i, g in workspace:GetChildren() do
+        if g.Name == "AceCarbine" and g:FindFirstChild("Root") then
+            addLaser(g:FindFirstChild("Root"))
+        end
+    end
 end)
 -----------------------------------------------------------------------------------------------------------------
 
