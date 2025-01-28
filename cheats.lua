@@ -1,8 +1,8 @@
 -- Cheat made by Eri --------------------------------------------------------------------------------------------
 
 -- Settings -----------------------------------------------------------------------------------------------------
-local toggleShowKey = Enum.KeyCode.RightBracket
-local shutdownKey = Enum.KeyCode.BackSlash
+local toggleShowKey = Enum.KeyCode.P
+local shutdownKey = Enum.KeyCode.U
 local minESPsize = 2
 local lazerWidth = 0.05
 -----------------------------------------------------------------------------------------------------------------
