@@ -1,6 +1,9 @@
 -- Cheat made by Eri --------------------------------------------------------------------------------------------
 
 -- Settings -----------------------------------------------------------------------------------------------------
+local toggleShowKey = Enum.KeyCode.P
+local shutdownKey = Enum.KeyCode.U
+local minESPsize = 2
 local lazerWidth = 0.05
 -----------------------------------------------------------------------------------------------------------------
 
@@ -101,10 +104,10 @@ end
 local uis = game:GetService("UserInputService")
 
 uis.InputBegan:Connect(function(key)
-	if key.KeyCode == Enum.KeyCode.P then
+	if key.KeyCode == toggleShowKey then
 		Main.Visible = not Main.Visible
 		FreeMouse.Visible = FreeMouse.Visible
-	elseif key.KeyCode == Enum.KeyCode.U then
+	elseif key.KeyCode == shutdownKey then
 		GUI:Destroy()
 	end
 end)
@@ -117,7 +120,7 @@ local function CreateESP(basepart, color)
 	local newEspGui = Instance.new("BillboardGui", basepart)
 	newEspGui.AlwaysOnTop = true
 	local espSize = basepart.Size.X > basepart.Size.Z and basepart.Size.X or basepart.Size.Z
-	newEspGui.Size = UDim2.new(espSize, 2, espSize, 2)
+	newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
 	local espFrame = Instance.new("Frame", newEspGui)
 	espFrame.Size = UDim2.new(1, 0, 1, 0)
 	espFrame.BackgroundTransparency = 1
