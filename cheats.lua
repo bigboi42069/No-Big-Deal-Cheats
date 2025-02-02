@@ -363,7 +363,7 @@ end)
 
 local showOwnHealth = createButton("Show own health")
 showOwnHealth.Activated:Connect(function()
-    local characterHealthFrame = CoreGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
+    local characterHealthFrame = plr.PlayerGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
     for i, v in characterHealthFrame:GetChildren() do
         if v:IsA("TextLabel") then
             v.TextTransparency = 0
