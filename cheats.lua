@@ -38,6 +38,7 @@ Main.BorderSizePixel = 0
 Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 Main.Size = UDim2.new(0, 400, 0, 300)
 Main.Visible = false
+Main.AutomaticSize = Enum.AutomaticSize.Y
 
 UIGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 255, 255)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(162, 162, 162))}
 UIGradient.Rotation = 90
@@ -356,6 +357,16 @@ magnumLazers.Activated:Connect(function()
     for i, g in workspace:GetChildren() do
         if g.Name == "MAGNUM" and g:FindFirstChild("Root") then
             addLaser(g:FindFirstChild("Root"))
+        end
+    end
+end)
+
+local showOwnHealth = createButton("Show own health")
+showOwnHealth.Activated:Connect(function()
+    local characterHealthFrame = CoreGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
+    for i, v in characterHealthFrame:GetChildren() do
+        if v:IsA("TextLabel") then
+            v.TextTransparency = 0
         end
     end
 end)
