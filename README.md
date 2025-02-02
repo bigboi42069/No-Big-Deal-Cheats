@@ -6,5 +6,7 @@ P to open the menu
 
 U to delete the UI in the game
 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Eri-Yoshimi/No-Big-Deal-Cheats-by-Eri/refs/heads/main/cheats.lua", true))();
+
 
 Click the ESP buttons each time for the rounds, it's not automatic.
