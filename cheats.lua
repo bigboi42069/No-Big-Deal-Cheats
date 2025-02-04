@@ -153,6 +153,27 @@ local function lookAtBoard(board)
 	end)
 end
 
+local function toggleHearAllPlayers()
+    if plr:FindFirstChild("HearAllPlayers") then
+        plr:FindFirstChild("HearAllPlayers"):Destroy()
+        return
+    end
+    local output = Instance.new("AudioDeviceOutput", plr)
+    output.Name = "HearAllPlayers"
+    output.Player = plr
+
+    for i, p in game.Players:GetPlayers() do
+        if p == plr then continue end
+        local mic = p:FindFirstChildOfClass("AudioDeviceInput")
+        if mic then
+            newWire = Instance.new("Wire", output)
+            newWire.SourceInstance = mic
+            newWire.TargetInstance = output
+            print(newWire)
+        end
+    end
+end
+
 local function addLaser(part)
     if not part or not part:IsA("BasePart") then
         return
@@ -369,6 +390,11 @@ showOwnHealth.Activated:Connect(function()
             v.TextTransparency = 0
         end
     end
+end)
+
+local hearAllPlayers = createButton("Toggle hearing all players")
+hearAllPlayers.Activated:Connect(function()
+    toggleHearAllPlayers()
 end)
 -----------------------------------------------------------------------------------------------------------------
 
