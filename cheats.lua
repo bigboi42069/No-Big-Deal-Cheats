@@ -118,7 +118,8 @@ end)
 local ESPCache = {}
 
 local function CreateESP(basepart, color)
-	local newEspGui = Instance.new("BillboardGui", basepart)
+	local newEspGui = Instance.new("BillboardGui", plr.PlayerGui)
+    	newEspGui.Adornee = basepart
 	newEspGui.AlwaysOnTop = true
 	local espSize = basepart.Size.X > basepart.Size.Z and basepart.Size.X or basepart.Size.Z
 	newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
