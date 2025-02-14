@@ -383,6 +383,15 @@ magnumLazers.Activated:Connect(function()
     end
 end)
 
+local allLazers = createButton("All Lazers")
+allLazers.Activated:Connect(function()
+    for i, g in workspace:GetChildren() do
+        if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "ToolboxMAC10" or g.Name == "MP5" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM") and g:FindFirstChild("Root") then
+            addLaser(g:FindFirstChild("Root"))
+        end
+    end
+end)
+
 local showOwnHealth = createButton("Show own health")
 showOwnHealth.Activated:Connect(function()
     local characterHealthFrame = plr.PlayerGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
