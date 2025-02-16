@@ -1,5 +1,5 @@
 -- Settings -----------------------------------------------------------------------------------------------------
-local toggleKey = Enum.KeyCode.P
+local toggleKey = Enum.KeyCode.RightBracket
 local shutdownKey = nil
 local minESPsize = 2
 local lazerWidth = 0.05
@@ -64,6 +64,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("StarterGui")
 -----------------------------------------------------------------------------------------------------------------
 
+--local library = require(script:WaitForChild("ErisModularGuiV2"))
 local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/Eri-Yoshimi/Eri-s-Modular-Gui/refs/heads/main/v2.lua'))()
 
 local Style = {
@@ -75,6 +76,8 @@ local Style = {
 	draggable = true,
 	centered = false,
 	freemouse = true,
+	maxPages = 3,
+	barY = 20,
 	startMinimized = false,
 	toggleBind = toggleKey,
 }
@@ -109,6 +112,8 @@ local function CreateESP(basepart, color)
 	end
 	newStroke.Thickness = 1
 	table.insert(ESPCache, newEspGui)
+	
+	return newEspGui
 end
 
 local function lookAtBoard(board)
@@ -129,11 +134,12 @@ local function lookAtBoard(board)
 	end)
 end
 
-local function toggleHearAllPlayers()
-	if plr:FindFirstChild("HearAllPlayers") then
+local function toggleHearAllPlayers(toggled)
+	if plr:FindFirstChild("HearAllPlayers") and (not toggled) then
 		plr:FindFirstChild("HearAllPlayers"):Destroy()
 		return
 	end
+	
 	local output = Instance.new("AudioDeviceOutput", plr)
 	output.Name = "HearAllPlayers"
 	output.Player = plr
@@ -203,68 +209,55 @@ end
 -- Buttons ------------------------------------------------------------------------------------------------------
 local espModule = window:createNewModule("ESP")
 
-local CashESP = espModule:AddButton("Cash ESP")
-CashESP.Activated:Connect(function()
-	for i, d in workspace:GetDescendants() do
-		if string.lower(d.Name) == "cash" and d:IsA("Model") then
-			local part = d:FindFirstChild("Root")
-			if part:IsA("BasePart") then
-				CreateESP(part, Color3.new(0, 1, 0))
+local function createESPButton(ButtonText, lookfor, bodyPart, color)
+	local createdESPs = {}
+	
+	local newESPButton, newESPtoggled = espModule:AddToggle(ButtonText)
+	newESPButton.Activated:Connect(function()
+		if newESPtoggled:GetState() == false then
+			for _, ce in createdESPs do
+				ce:Destroy()
+			end
+			return
+		end
+		for i, d in workspace:GetDescendants() do
+			if string.lower(d.Name) == lookfor and d:IsA("Model") then
+				local part = d:FindFirstChild(bodyPart)
+				if part:IsA("BasePart") then
+					local newESP = CreateESP(part, color)
+					table.insert(createdESPs, newESP)
+				end
 			end
 		end
-	end
-end)
-
-local FakeCashESP = espModule:AddButton("Fake Cash ESP")
-FakeCashESP.Activated:Connect(function()
-	for i, d in workspace:GetDescendants() do
-		if string.lower(d.Name) == "fakecash" and d:IsA("Model") then
-			local part = d:FindFirstChild("Root")
+	end)
+	workspace.DescendantAdded:Connect(function(d)
+		if string.lower(d.Name) == lookfor and d:IsA("Model") then
+			print(lookfor)
+			if newESPtoggled:GetState() == false then return end
+			local part = d:FindFirstChild(bodyPart)
 			if part:IsA("BasePart") then
-				CreateESP(part, Color3.new(1, 0.666667, 0))
+				local newESP = CreateESP(part, color)
+				table.insert(createdESPs, newESP)
 			end
 		end
-	end
-end)
+	end)
+end
 
-local DiskESP = espModule:AddButton("Disk ESP")
-DiskESP.Activated:Connect(function()
-	for i, d in workspace:GetDescendants() do
-		if string.lower(d.Name) == "disk" and d:IsA("Model") then
-			local part = d:FindFirstChild("Color")
-			if part:IsA("BasePart") then
-				CreateESP(part, Color3.new(0, 0, 0))
-			end
-		end
-	end
-end)
+createESPButton("Cash ESP", "cash", "Root", Color3.new(0, 1, 0))
+createESPButton("Fake Cash ESP", "fakecash", "Root", Color3.new(1, 0.666667, 0))
+createESPButton("Disk ESP", "disk", "Color", Color3.new(0, 0, 0))
+createESPButton("Grenade ESP", "grenade", "Root", Color3.new(1, 0, 0))
+createESPButton("Seltzer Bottle ESP", "bottle", "Fluid", Color3.new(0.666667, 0, 0.498039))
 
-local GrenadeESP = espModule:AddButton("Grenade ESP")
-GrenadeESP.Activated:Connect(function()
-	for i, d in workspace:GetDescendants() do
-		if string.lower(d.Name) == "grenade" and d:IsA("Model") then
-			local part = d:FindFirstChild("Root")
-			if part:IsA("BasePart") then
-				CreateESP(part, Color3.new(1, 0, 0))
-			end
-		end
-	end
-end)
-
-local SeltzerESP = espModule:AddButton("Seltzer Bottle ESP")
-SeltzerESP.Activated:Connect(function()
-	for i, d in workspace:GetDescendants() do
-		if string.lower(d.Name) == "bottle" and d:IsA("Model") then
-			local part = d:FindFirstChild("Fluid")
-			if part:IsA("BasePart") then
-				CreateESP(part, Color3.new(0.666667, 0, 0.498039))
-			end
-		end
-	end
-end)
-
-local PlayerESP = espModule:AddButton("Player ESP")
+local PlayerESP, playerESPtoggled = espModule:AddToggle("Player ESP")
+local createdPlayerESPs = {}
 PlayerESP.Activated:Connect(function()
+	if playerESPtoggled:GetState() == false then
+		for _, ce in createdPlayerESPs do
+			ce:Destroy()
+		end
+		return
+	end
 	for i, p in game.Players:GetPlayers() do
 		local playerChar = workspace:FindFirstChild(p.Name)
 		if playerChar then
@@ -274,6 +267,17 @@ PlayerESP.Activated:Connect(function()
 			if playerChar:FindFirstChild("Torso") then
 				CreateESP(playerChar:FindFirstChild("Torso"), Color3.new(1, 1, 1))
 			end
+		end
+	end
+end)
+workspace.ChildAdded:Connect(function(c)
+	if game.Players:FindFirstChild(c.Name) and c:IsA("Model") then
+		if playerESPtoggled:GetState() == false then return end
+		if c:FindFirstChild("Head") then
+			CreateESP(c:FindFirstChild("Head"), Color3.new(1, 1, 1))				
+		end
+		if c:FindFirstChild("Torso") then
+			CreateESP(c:FindFirstChild("Torso"), Color3.new(1, 1, 1))
 		end
 	end
 end)
