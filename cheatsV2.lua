@@ -1,6 +1,6 @@
 -- Settings -----------------------------------------------------------------------------------------------------
 local toggleKey = Enum.KeyCode.P
-local shutdownKey = Enum.KeyCode.U
+local shutdownKey = nil
 local minESPsize = 2
 local lazerWidth = 0.05
 -----------------------------------------------------------------------------------------------------------------
@@ -81,11 +81,13 @@ local Style = {
 
 local window = library:Initialize(Style)
 
-game:GetService("UserInputService").InputBegan:Connect(function(key)
-	if key.KeyCode == shutdownKey then
-		window:Destroy()
-	end
-end)
+if shutdownKey ~= nil then
+	game:GetService("UserInputService").InputBegan:Connect(function(key)
+		if key.KeyCode == shutdownKey then
+			window:Destroy()
+		end
+	end)
+end
 
 -- Functions ----------------------------------------------------------------------------------------------------
 local ESPCache = {}
