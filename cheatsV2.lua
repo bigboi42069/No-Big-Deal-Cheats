@@ -99,6 +99,10 @@ local function CreateESP(basepart, color)
 	local newEspGui = Instance.new("BillboardGui", plr.PlayerGui)
 	newEspGui.Adornee = basepart
 	newEspGui.AlwaysOnTop = true
+	newEspGui.ResetOnSpawn = false
+	task.delay(5, function()
+		newEspGui.ResetOnSpawn = true
+	end)
 	local espSize = basepart.Size.X > basepart.Size.Z and basepart.Size.X or basepart.Size.Z
 	newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
 	local espFrame = Instance.new("Frame", newEspGui)
@@ -232,7 +236,6 @@ local function createESPButton(ButtonText, lookfor, bodyPart, color)
 	end)
 	workspace.DescendantAdded:Connect(function(d)
 		if string.lower(d.Name) == lookfor and d:IsA("Model") then
-			print(lookfor)
 			if newESPtoggled:GetState() == false then return end
 			local part = d:FindFirstChild(bodyPart)
 			if part:IsA("BasePart") then
@@ -262,22 +265,27 @@ PlayerESP.Activated:Connect(function()
 		local playerChar = workspace:FindFirstChild(p.Name)
 		if playerChar then
 			if playerChar:FindFirstChild("Head") then
-				CreateESP(playerChar:FindFirstChild("Head"), Color3.new(1, 1, 1))				
+				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), Color3.new(1, 1, 1))
+				table.insert(createdPlayerESPs, createdESP)
 			end
 			if playerChar:FindFirstChild("Torso") then
-				CreateESP(playerChar:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+				table.insert(createdPlayerESPs, createdESP)
 			end
 		end
 	end
 end)
 workspace.ChildAdded:Connect(function(c)
+	if playerESPtoggled:GetState() == false then return end
+	task.wait(1)
 	if game.Players:FindFirstChild(c.Name) and c:IsA("Model") then
-		if playerESPtoggled:GetState() == false then return end
 		if c:FindFirstChild("Head") then
-			CreateESP(c:FindFirstChild("Head"), Color3.new(1, 1, 1))				
+			local createdESP = CreateESP(c:FindFirstChild("Head"), Color3.new(1, 1, 1))
+			table.insert(createdPlayerESPs, createdESP)
 		end
 		if c:FindFirstChild("Torso") then
-			CreateESP(c:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+			local createdESP = CreateESP(c:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+			table.insert(createdPlayerESPs, createdESP)
 		end
 	end
 end)
