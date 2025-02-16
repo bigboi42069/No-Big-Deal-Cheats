@@ -354,38 +354,37 @@ LookAtMissionBoard3.Activated:Connect(function()
 	lookAtBoard(board)
 end)
 
-local MonitorChat = miscModule:AddButton("Chat Monitor")
-local chatMonitor = false
-local chatEvent = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ToClient"):WaitForChild("Chat")
-if chatEvent then
-	chatEvent.OnClientEvent:Connect(function(plr, part, message)
-		if chatMonitor then
-			print(plr.Name .. " sent: ".. message)
-			CoreGui:SetCore("SendNotification", {
-				Title = plr.Name;
-				Text = message;
-				Duration = 3;
-			})
-		end
-	end)
+local MonitorChat, monotoringChat = miscModule:AddToggle("Chat Monitor")
+if game.ReplicatedStorage:FindFirstChild("Remotes") then
+	local chatMonitor = false
+	local chatEvent = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ToClient"):WaitForChild("Chat")
+	if chatEvent then
+		chatEvent.OnClientEvent:Connect(function(plr, part, message)
+			if monotoringChat:GetState() then
+				print(plr.Name .. " sent: ".. message)
+				CoreGui:SetCore("SendNotification", {
+					Title = plr.Name;
+					Text = message;
+					Duration = 3;
+				})
+			end
+		end)
+	end
 end
-MonitorChat.Activated:Connect(function()
-	chatMonitor = not chatMonitor
-end)
 
-local showOwnHealth = miscModule:AddButton("Show own health")
+local showOwnHealth, showingOwnHealth = miscModule:AddToggle("Show own health")
 showOwnHealth.Activated:Connect(function()
 	local characterHealthFrame = plr.PlayerGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
 	for i, v in characterHealthFrame:GetChildren() do
 		if v:IsA("TextLabel") then
-			v.TextTransparency = 0
+			v.TextTransparency = showingOwnHealth:GetState() and 0 or 1
 		end
 	end
 end)
 
-local hearAllPlayers = miscModule:AddButton("Toggle hearing all players")
+local hearAllPlayers, hearingAllPlayers = miscModule:AddToggle("Toggle hearing all players")
 hearAllPlayers.Activated:Connect(function()
-	toggleHearAllPlayers()
+	toggleHearAllPlayers(hearingAllPlayers:GetState())
 end)
 
 -----------------------------------------------------------------------------------------------------------------
