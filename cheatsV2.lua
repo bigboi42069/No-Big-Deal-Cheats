@@ -67,7 +67,7 @@ local CoreGui = game:GetService("StarterGui")
 local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/Eri-Yoshimi/Eri-s-Modular-Gui/refs/heads/main/v2.lua'))()
 
 local Style = {
-	name = "No Big Deal",
+	name = "No Big Deal script by Eri",
 	size = UDim2.new(0, 600, 0, 400),
 	primaryColor = Color3.new(0.615686, 0.47451, 0.305882),
 	secondaryColor = Color3.new(0.670588, 0.584314, 0.388235),
