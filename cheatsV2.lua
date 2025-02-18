@@ -64,8 +64,12 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("StarterGui")
 -----------------------------------------------------------------------------------------------------------------
 
---local library = require(script:WaitForChild("ErisModularGuiV2"))
-local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/Eri-Yoshimi/Eri-s-Modular-Gui/refs/heads/main/v2.lua'))()
+local library
+if RunService:IsStudio() then
+	library = require(script:WaitForChild("ErisModularGuiV2"))
+else
+	library = loadstring(game:HttpGet('https://raw.githubusercontent.com/Eri-Yoshimi/Eri-s-Modular-Gui/refs/heads/main/v2.lua'))()
+end
 
 local Style = {
 	name = "No Big Deal script by Eri",
@@ -138,30 +142,8 @@ local function lookAtBoard(board)
 	end)
 end
 
-local function toggleHearAllPlayers(toggled)
-	if plr:FindFirstChild("HearAllPlayers") and (not toggled) then
-		plr:FindFirstChild("HearAllPlayers"):Destroy()
-		return
-	end
-	
-	local output = Instance.new("AudioDeviceOutput", plr)
-	output.Name = "HearAllPlayers"
-	output.Player = plr
-
-	for i, p in game.Players:GetPlayers() do
-		if p == plr then continue end
-		local mic = p:FindFirstChildOfClass("AudioDeviceInput")
-		if mic then
-			local newWire = Instance.new("Wire", output)
-			newWire.SourceInstance = mic
-			newWire.TargetInstance = output
-			print(newWire)
-		end
-	end
-end
-
 local function addLaser(part)
-	if not part or not part:IsA("BasePart") then
+	if not part or not part:IsA("Attachment") then
 		return
 	end
 
@@ -180,13 +162,13 @@ local function addLaser(part)
 			return
 		end
 
-		local startPos = part.Position + (part.CFrame.UpVector / 3.5)
-		local direction = part.CFrame.LookVector * 5000
+		local startPos = part.WorldCFrame.Position
+		local direction = part.WorldCFrame.LookVector * 5000
 		local rayOrigin = startPos
 		local rayDirection = direction
 
 		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = {part.Parent, workspace:WaitForChild(plr.Name), laserPart}
+		raycastParams.FilterDescendantsInstances = {part.Parent.Parent, workspace:WaitForChild(plr.Name), laserPart}
 		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 		raycastParams.IgnoreWater = true
 
@@ -295,8 +277,8 @@ local lazerModule = window:createNewModule("Lazers")
 local pistolLazers = lazerModule:AddButton("Pistol Lazers")
 pistolLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "Pistol" or g.Name == "Snub" and g:FindFirstChild("Root") then
-			addLaser(g:FindFirstChild("Root"))
+		if g.Name == "Pistol" or g.Name == "Snub" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
@@ -304,8 +286,8 @@ end)
 local kickLazers = lazerModule:AddButton("Kick-10 Lazers")
 kickLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "ToolboxMAC10" and g:FindFirstChild("Root") then
-			addLaser(g:FindFirstChild("Root"))
+		if g.Name == "ToolboxMAC10" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
@@ -313,8 +295,8 @@ end)
 local carcosaLazers = lazerModule:AddButton("Carcosa Rifle Lazers")
 carcosaLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "Sniper" and g:FindFirstChild("Root") then
-			addLaser(g:FindFirstChild("Root"))
+		if g.Name == "Sniper" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
@@ -322,8 +304,8 @@ end)
 local aceLazers = lazerModule:AddButton("Ace Lazers")
 aceLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "AceCarbine" and g:FindFirstChild("Root") then
-			addLaser(g:FindFirstChild("Root"))
+		if g.Name == "AceCarbine" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
@@ -331,8 +313,8 @@ end)
 local magnumLazers = lazerModule:AddButton("Magnum Lazers")
 magnumLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "MAGNUM" and g:FindFirstChild("Root") then
-			addLaser(g:FindFirstChild("Root"))
+		if g.Name == "MAGNUM" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
@@ -340,29 +322,20 @@ end)
 local allLazers = lazerModule:AddButton("All Lazers")
 allLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "ToolboxMAC10" or g.Name == "MP5" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM") and g:FindFirstChild("Root") then
-			addLaser(g:FindFirstChild("Root"))
+		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "ToolboxMAC10" or g.Name == "MP5" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
 
 local miscModule = window:createNewModule("Miscellaneous")
 
-local LookAtMissionBoard1 = miscModule:AddButton("Look At Alamont's Board")
-LookAtMissionBoard1.Activated:Connect(function()
-	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild("1"):WaitForChild("MissionBoard")
-	lookAtBoard(board)
-end)
-
-local LookAtMissionBoard2 = miscModule:AddButton("Look At Halfwell's Board")
-LookAtMissionBoard2.Activated:Connect(function()
-	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild("2"):WaitForChild("MissionBoard")
-	lookAtBoard(board)
-end)
-
-local LookAtMissionBoard3 = miscModule:AddButton("Look At Bergmann's Board")
-LookAtMissionBoard3.Activated:Connect(function()
-	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild("3"):WaitForChild("MissionBoard")
+local lookAtMissionBoardList = miscModule:AddList("Look at board")
+lookAtMissionBoardList:AddListItem("Alamont", "1")
+lookAtMissionBoardList:AddListItem("Bergman", "3")
+lookAtMissionBoardList:AddListItem("Halfwell", "2")
+lookAtMissionBoardList.OnItemChanged:Connect(function(boardID)
+	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild(boardID):WaitForChild("MissionBoard")
 	lookAtBoard(board)
 end)
 
@@ -394,10 +367,38 @@ showOwnHealth.Activated:Connect(function()
 	end
 end)
 
-local hearAllPlayers, hearingAllPlayers = miscModule:AddToggle("Toggle hearing all players")
-hearAllPlayers.Activated:Connect(function()
-	toggleHearAllPlayers(hearingAllPlayers:GetState())
+local hearAllPlayersOutput = Instance.new("AudioDeviceOutput", plr)
+hearAllPlayersOutput.Name = "HearAllPlayers"
+hearAllPlayersOutput.Player = plr
+local hearAllPlayersVolumeControl = Instance.new("AudioFader", hearAllPlayersOutput)
+local newVolumeWire = Instance.new("Wire", hearAllPlayersVolumeControl)
+newVolumeWire.SourceInstance = hearAllPlayersVolumeControl
+newVolumeWire.TargetInstance = hearAllPlayersOutput
+for i, p in game.Players:GetPlayers() do
+	if p == plr then continue end
+	local mic = p:FindFirstChildOfClass("AudioDeviceInput")
+	if mic then
+		local newWire = Instance.new("Wire", hearAllPlayersOutput)
+		newWire.SourceInstance = mic
+		newWire.TargetInstance = hearAllPlayersVolumeControl
+	end
+end
+game.Players.PlayerAdded:Connect(function(plr)
+	task.wait(1)
+	local mic = plr:FindFirstChildOfClass("AudioDeviceInput")
+	if mic then
+		local newWire = Instance.new("Wire", hearAllPlayersVolumeControl)
+		newWire.SourceInstance = mic
+		newWire.TargetInstance = hearAllPlayersVolumeControl
+	end
 end)
+local volumeSlider = miscModule:AddSlider("Global voice chat volume", 0, 1)
+volumeSlider.OnValueChanged:Connect(function(value)
+	if hearAllPlayersOutput then
+		hearAllPlayersVolumeControl.Volume = value
+	end
+end)
+hearAllPlayersVolumeControl.Volume = volumeSlider:GetValue() or 0
 
 -----------------------------------------------------------------------------------------------------------------
 
