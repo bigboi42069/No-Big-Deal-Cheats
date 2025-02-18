@@ -399,6 +399,24 @@ volumeSlider.OnValueChanged:Connect(function(value)
 	end
 end)
 hearAllPlayersVolumeControl.Volume = volumeSlider:GetValue() or 0
+
+--local teleportModule = window:createNewModule("Teleport")
+--teleportModule:AddText("!!! WARNING: THIS IS VERY LIKELY TO GET YOU CAUGHT !!!")
+--local function teleportTo(part)
+--	local char = workspace:WaitForChild(game.Players.LocalPlayer.Name)
+--	for i = 1, 10 do
+--		char:PivotTo(part.CFrame)
+--		wait()
+--	end
+--end
+--local placeList = teleportModule:AddList("Teleport to")
+--for i, v in workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):GetChildren() do
+--	placeList:AddListItem(v.Name, v)
+--end
+--placeList.OnItemChanged:Connect(function(place)
+--	local placeInstance = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):FindFirstChild(place)
+--	teleportTo(place)
+--end)
 -----------------------------------------------------------------------------------------------------------------
 
 -- Credit Notification ------------------------------------------------------------------------------------------
