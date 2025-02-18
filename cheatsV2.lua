@@ -399,7 +399,6 @@ volumeSlider.OnValueChanged:Connect(function(value)
 	end
 end)
 hearAllPlayersVolumeControl.Volume = volumeSlider:GetValue() or 0
-
 -----------------------------------------------------------------------------------------------------------------
 
 -- Credit Notification ------------------------------------------------------------------------------------------
