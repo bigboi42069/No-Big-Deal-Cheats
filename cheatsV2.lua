@@ -120,7 +120,7 @@ local function CreateESP(basepart, color)
 	end
 	newStroke.Thickness = 1
 	table.insert(ESPCache, newEspGui)
-	
+
 	return newEspGui
 end
 
@@ -197,7 +197,7 @@ local espModule = window:createNewModule("ESP")
 
 local function createESPButton(ButtonText, lookfor, bodyPart, color)
 	local createdESPs = {}
-	
+
 	local newESPButton, newESPtoggled = espModule:AddToggle(ButtonText)
 	newESPButton.Activated:Connect(function()
 		if newESPtoggled:GetState() == false then
@@ -400,23 +400,28 @@ volumeSlider.OnValueChanged:Connect(function(value)
 end)
 hearAllPlayersVolumeControl.Volume = volumeSlider:GetValue() or 0
 
---local teleportModule = window:createNewModule("Teleport")
---teleportModule:AddText("!!! WARNING: THIS IS VERY LIKELY TO GET YOU CAUGHT !!!")
---local function teleportTo(part)
---	local char = workspace:WaitForChild(game.Players.LocalPlayer.Name)
---	for i = 1, 10 do
---		char:PivotTo(part.CFrame)
---		wait()
---	end
---end
---local placeList = teleportModule:AddList("Teleport to")
---for i, v in workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):GetChildren() do
---	placeList:AddListItem(v.Name, v)
---end
---placeList.OnItemChanged:Connect(function(place)
---	local placeInstance = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):FindFirstChild(place)
---	teleportTo(place)
---end)
+local showTeamSelectionMenu, toggledTeamSelectionMenu = miscModule:AddToggle("Toggle Team Selection Menu")
+showTeamSelectionMenu.Activated:Connect(function()
+	local teamMenu = plr.PlayerGui.RootGui.TeamFrame
+	if teamMenu then
+		teamMenu.Visible = toggledTeamSelectionMenu:GetState()
+	end
+end)
+
+local teleportModule = window:createNewModule("Teleport")
+teleportModule:AddText("!!! WARNING: THIS IS VERY LIKELY TO GET YOU CAUGHT !!!")
+local function teleportTo(part)
+	local char = workspace:WaitForChild(game.Players.LocalPlayer.Name)
+	for i = 1, 10 do
+		char:PivotTo(part.CFrame)
+		wait()
+	end
+end
+for i, v in workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):GetChildren() do
+	teleportModule:AddButton(v.Name).Activated:Connect(function()
+		teleportTo(v)
+	end)
+end
 -----------------------------------------------------------------------------------------------------------------
 
 -- Credit Notification ------------------------------------------------------------------------------------------
