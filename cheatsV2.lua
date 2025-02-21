@@ -411,17 +411,44 @@ end)
 local teleportModule = window:createNewModule("Teleport")
 teleportModule:AddText("!!! WARNING: THIS IS VERY LIKELY TO GET YOU CAUGHT !!!")
 local function teleportTo(part)
-	local char = workspace:WaitForChild(game.Players.LocalPlayer.Name)
+	local char: Model = workspace:WaitForChild(game.Players.LocalPlayer.Name)
 	for i = 1, 10 do
 		char:PivotTo(part.CFrame)
+		char:FindFirstChild("HumanoidRootPart").Velocity = 0
 		wait()
 	end
 end
-for i, v in workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):GetChildren() do
-	teleportModule:AddButton(v.Name).Activated:Connect(function()
-		teleportTo(v)
-	end)
+if workspace:FindFirstChild("CurrentMap") then
+	for i, v in workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Tempmarkers"):GetChildren() do
+		teleportModule:AddButton(v.Name).Activated:Connect(function()
+			teleportTo(v)
+		end)
+	end
 end
+
+local trollModule = window:createNewModule("Troll")
+
+trollModule:AddText("!!! WARNING: THIS IS WILL GET YOU CAUGHT !!!")
+
+trollModule:AddText("Get in a driver seat in a car and toggle this on to start killing everyone.")
+local carKill, carKillToggled = trollModule:AddToggle("Car Kill")
+carKill.Activated:Connect(function()
+	task.spawn(function()
+		while wait(math.random(5, 25)/100) and plr.Character and carKillToggled:GetState() == true do
+			local randmPLR: Player = game.Players:GetPlayers()[math.random(1, #game.Players:GetChildren())]
+			if randmPLR.Character == nil and randmPLR ~= game.Players.LocalPlayer then continue end
+			if randmPLR.Character:GetPivot().Y <= -100 then continue end
+			for i = 1, 25 do
+				plr.Character:PivotTo(randmPLR.Character:GetPivot())
+				wait(math.random(0, 10) / 200)
+				plr.Character:PivotTo(plr.Character:GetPivot() + Vector3.new(0, 25, 0))
+			end
+
+			plr.Character:PivotTo(CFrame.new(0, 250, 0))
+			if plr.Character:FindFirstChild("HumanoidRootPart") then plr.Character:FindFirstChild("HumanoidRootPart").Velocity = Vector3.new(0, 0, 0) end
+		end
+	end)
+end)
 -----------------------------------------------------------------------------------------------------------------
 
 -- Credit Notification ------------------------------------------------------------------------------------------
