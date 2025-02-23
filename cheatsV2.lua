@@ -1,5 +1,5 @@
 -- Settings -----------------------------------------------------------------------------------------------------
-local toggleKey = Enum.KeyCode.RightBracket
+local toggleKey = Enum.KeyCode.P
 local shutdownKey = nil
 local minESPsize = 2
 local lazerWidth = 0.05
@@ -429,6 +429,7 @@ PlayerESP.Activated:Connect(function()
 				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), Color3.new(1, 1, 1))
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Transparency = 0
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
@@ -436,6 +437,7 @@ PlayerESP.Activated:Connect(function()
 				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), Color3.new(1, 1, 1))
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Transparency = 0
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
@@ -450,6 +452,7 @@ workspace.ChildAdded:Connect(function(c)
 			local createdESP = CreateESP(c:FindFirstChild("Head"), Color3.new(1, 1, 1))
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Transparency = 0
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
@@ -457,6 +460,7 @@ workspace.ChildAdded:Connect(function(c)
 			local createdESP = CreateESP(c:FindFirstChild("Torso"), Color3.new(1, 1, 1))
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Transparency = 0
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
