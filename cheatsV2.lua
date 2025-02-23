@@ -98,6 +98,8 @@ end
 
 -- Functions ----------------------------------------------------------------------------------------------------
 local ESPCache = {}
+local espTextVisible = false
+local borderThickness = 1
 
 local function CreateESP(basepart, color)
 	local newEspGui = Instance.new("BillboardGui", plr.PlayerGui)
@@ -109,16 +111,24 @@ local function CreateESP(basepart, color)
 	end)
 	local espSize = basepart.Size.X > basepart.Size.Z and basepart.Size.X or basepart.Size.Z
 	newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
-	local espFrame = Instance.new("Frame", newEspGui)
+	local espFrame = Instance.new("TextLabel", newEspGui)
+	espFrame.Text = string.upper(string.sub(basepart.Parent.Name, 1, 1))
+	espFrame.TextTransparency = espTextVisible and 0 or 1
+	espFrame.TextScaled = true
 	espFrame.Size = UDim2.new(1, 0, 1, 0)
 	espFrame.BackgroundTransparency = 1
 	local newStroke = Instance.new("UIStroke", espFrame)
+	newStroke.Transparency = espTextVisible and 1 or 0
 	if color then
 		newStroke.Color = color
+		espFrame.TextColor3 = color
 	else
 		newStroke.Color = basepart.Color
+		espFrame.TextColor3 = basepart.Color
 	end
-	newStroke.Thickness = 1
+	newStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	newStroke.LineJoinMode = Enum.LineJoinMode.Miter
+	newStroke.Thickness = borderThickness
 	table.insert(ESPCache, newEspGui)
 
 	return newEspGui
@@ -192,6 +202,138 @@ local function addLaser(part)
 	game:GetService("RunService").Heartbeat:Connect(updateLaser)
 end
 
+local cash = {}
+local markers = {}
+
+local function getDistance(part1, part2)
+	return (part1.Position - part2.Position).Magnitude
+end
+
+local function getAveragePosition(group)
+	local totalPosition = Vector3.new(0, 0, 0)
+	local count = #group
+
+	for _, obj in ipairs(group) do
+		totalPosition = totalPosition + obj.Position
+	end
+
+	return totalPosition / count
+end
+
+local showGroups = false
+local function updateGroupMarkers(groups)
+	-- Remove extra markers
+	while #markers > #groups do
+		local marker = table.remove(markers)
+		if marker.marker and marker.text then
+			marker.marker:Destroy()
+			marker.text.Parent:Destroy()
+		end
+	end
+
+	-- Update or create markers
+	for i, group in ipairs(groups) do
+		if #group > 0 then -- Prevent markers from staying if the group is empty
+			local avgPosition = getAveragePosition(group) + Vector3.new(0, 100, 0)
+
+			if markers[i] then
+				markers[i].marker.Position = avgPosition
+				markers[i].text.Text = "$"..#group
+			else
+				local marker = Instance.new("Part")
+				marker.Size = Vector3.new(5, 5, 5)
+				marker.Position = avgPosition
+				marker.Anchored = true
+				marker.CanCollide = false
+				marker.Transparency = 1
+				marker.Material = Enum.Material.Neon
+				marker.Parent = workspace
+
+				local newEspGui = Instance.new("BillboardGui", game.Players.LocalPlayer.PlayerGui)
+				newEspGui.Adornee = marker
+				newEspGui.AlwaysOnTop = true
+				newEspGui.ResetOnSpawn = false
+				task.delay(5, function()
+					newEspGui.ResetOnSpawn = true
+				end)
+				newEspGui.Size = UDim2.new(0, 50, 0, 50)
+
+				local markerText = Instance.new("TextLabel", newEspGui)
+				markerText.TextScaled = true
+				markerText.Size = UDim2.new(1, 0, 1, 0)
+				markerText.BackgroundTransparency = 1
+				markerText.TextColor3 = Color3.new(0.333333, 1, 0)
+				markerText.TextTransparency = showGroups and 0 or 1
+
+				markerText.Text = "$"..#group
+
+				markers[i] = {marker = marker, text = markerText}
+			end
+		else
+			-- If the group is empty, destroy the marker
+			if markers[i] then
+				markers[i].marker:Destroy()
+				markers[i].text.Parent:Destroy()
+				table.remove(markers, i)
+			end
+		end
+	end
+end
+
+local function groupCashObjects()
+	local groups = {}
+	local visited = {}
+	
+	for i, c in cash do
+		if c == nil or c.Parent == nil or c.Parent.Parent == nil then
+			table.remove(cash, i)
+			return
+		end
+	end
+
+	for _, c in ipairs(cash) do
+		if not visited[c] then
+			local group = {c}
+			visited[c] = true
+
+			for _, other in ipairs(cash) do
+				if not visited[other] and getDistance(c, other) <= 25 then
+					table.insert(group, other)
+					visited[other] = true
+				end
+			end
+
+			table.insert(groups, group)
+		end
+	end
+	
+	updateGroupMarkers(groups)
+end
+
+-- Scan for existing cash in workspace
+for _, d in ipairs(workspace:GetDescendants()) do
+	if string.lower(d.Name) == "cash" and d:IsA("Model") then
+		local part = d:FindFirstChild("Root")
+		if part and part:IsA("BasePart") then
+			table.insert(cash, part)
+		end
+	end
+end
+
+-- Detect new cash objects
+workspace.DescendantAdded:Connect(function(d)
+	task.wait(1) -- Small delay to allow the object to be fully initialized
+	if string.lower(d.Name) == "cash" and d:IsA("Model") then
+		local part = d:FindFirstChild("Root")
+		if part and part:IsA("BasePart") then
+			table.insert(cash, part)
+		end
+	end
+end)
+
+-- Continuously update groups and markers
+RunService.Heartbeat:Connect(groupCashObjects)
+
 -- Buttons ------------------------------------------------------------------------------------------------------
 local espModule = window:createNewModule("ESP")
 
@@ -228,11 +370,48 @@ local function createESPButton(ButtonText, lookfor, bodyPart, color)
 	end)
 end
 
+local espTextToggle, espTextToggled = espModule:AddToggle("Use Text")
+espTextToggle.Activated:Connect(function()
+	espTextVisible = espTextToggled:GetState()
+	for i, v in ESPCache do
+		local espFrame = v:FindFirstChildOfClass("TextLabel")
+		if espFrame then
+			espFrame.TextTransparency = espTextToggled:GetState() and 0 or 1
+			local espBorder = v:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke")
+			if espBorder then
+				espBorder.Transparency = espTextToggled:GetState() and 1 or 0
+			end
+		end
+	end
+end)
+
+local thicknessSlider = espModule:AddSlider("ESP Border Thickness", 1, 5)
+thicknessSlider.OnValueChanged:Connect(function(value)
+	borderThickness = value
+	for i, v in ESPCache do
+		if v and v:FindFirstChildOfClass("TextLabel") and v:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke") then
+			v:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = value
+		end
+	end
+end)
+
+espModule:AddDivider()
+
+local groupedCash, groupedCashToggled = espModule:AddToggle("Grouped Cash")
+groupedCash.Activated:Connect(function()
+	showGroups = groupedCashToggled:GetState()
+	for i, gc in markers do
+		gc.text.TextTransparency = showGroups and 0 or 1
+	end
+end)
+
 createESPButton("Cash ESP", "cash", "Root", Color3.new(0, 1, 0))
 createESPButton("Fake Cash ESP", "fakecash", "Root", Color3.new(1, 0.666667, 0))
 createESPButton("Disk ESP", "disk", "Color", Color3.new(0, 0, 0))
 createESPButton("Grenade ESP", "grenade", "Root", Color3.new(1, 0, 0))
 createESPButton("Seltzer Bottle ESP", "bottle", "Fluid", Color3.new(0.666667, 0, 0.498039))
+
+espModule:AddDivider()
 
 local PlayerESP, playerESPtoggled = espModule:AddToggle("Player ESP")
 local createdPlayerESPs = {}
@@ -248,10 +427,16 @@ PlayerESP.Activated:Connect(function()
 		if playerChar then
 			if playerChar:FindFirstChild("Head") then
 				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), Color3.new(1, 1, 1))
+				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
+				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
 			if playerChar:FindFirstChild("Torso") then
 				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
+				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
 		end
@@ -263,10 +448,16 @@ workspace.ChildAdded:Connect(function(c)
 	if game.Players:FindFirstChild(c.Name) and c:IsA("Model") then
 		if c:FindFirstChild("Head") then
 			local createdESP = CreateESP(c:FindFirstChild("Head"), Color3.new(1, 1, 1))
+			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
+			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
 		if c:FindFirstChild("Torso") then
 			local createdESP = CreateESP(c:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
+			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
 	end
@@ -339,6 +530,16 @@ lookAtMissionBoardList.OnItemChanged:Connect(function(boardID)
 	lookAtBoard(board)
 end)
 
+local showOwnHealth, showingOwnHealth = miscModule:AddToggle("Show own health")
+showOwnHealth.Activated:Connect(function()
+	local characterHealthFrame = plr.PlayerGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
+	for i, v in characterHealthFrame:GetChildren() do
+		if v:IsA("TextLabel") then
+			v.TextTransparency = showingOwnHealth:GetState() and 0 or 1
+		end
+	end
+end)
+
 local MonitorChat, monotoringChat = miscModule:AddToggle("Chat Monitor")
 if game.ReplicatedStorage:FindFirstChild("Remotes") then
 	local chatMonitor = false
@@ -356,16 +557,6 @@ if game.ReplicatedStorage:FindFirstChild("Remotes") then
 		end)
 	end
 end
-
-local showOwnHealth, showingOwnHealth = miscModule:AddToggle("Show own health")
-showOwnHealth.Activated:Connect(function()
-	local characterHealthFrame = plr.PlayerGui:WaitForChild("RootGui"):WaitForChild("CharacterFrame"):WaitForChild("PaperDoll")
-	for i, v in characterHealthFrame:GetChildren() do
-		if v:IsA("TextLabel") then
-			v.TextTransparency = showingOwnHealth:GetState() and 0 or 1
-		end
-	end
-end)
 
 local hearAllPlayersOutput = Instance.new("AudioDeviceOutput", plr)
 hearAllPlayersOutput.Name = "HearAllPlayers"
@@ -405,6 +596,14 @@ showTeamSelectionMenu.Activated:Connect(function()
 	local teamMenu = plr.PlayerGui.RootGui.TeamFrame
 	if teamMenu then
 		teamMenu.Visible = toggledTeamSelectionMenu:GetState()
+	end
+end)
+
+local removeVCWarning = miscModule:AddButton("Remove VC Warning Gui")
+removeVCWarning.Activated:Connect(function()
+	local vcWarningGui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("VCWarning")
+	if vcWarningGui then
+		vcWarningGui:Destroy()
 	end
 end)
 
