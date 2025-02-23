@@ -10,7 +10,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Eri-Yoshimi/No-Big-De
 This uses my new UI Library.
 
 
-# No-Big-Deal-Cheats-by-Eri-V1
+# No-Big-Deal-Cheats-V1-by-Eri
 Cheats for the roblox game No Big Deal by Eri.
 
 
