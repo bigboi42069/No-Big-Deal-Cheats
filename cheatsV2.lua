@@ -178,7 +178,7 @@ local function addLaser(part)
 		local rayDirection = direction
 
 		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = {part.Parent.Parent, workspace:WaitForChild(plr.Name), laserPart}
+		raycastParams.FilterDescendantsInstances = {part.Parent.Parent, laserPart, workspace:FindFirstChild(plr.Name)}
 		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 		raycastParams.IgnoreWater = true
 
