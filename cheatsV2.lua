@@ -202,6 +202,10 @@ local function addLaser(part)
 	game:GetService("RunService").Heartbeat:Connect(updateLaser)
 end
 
+if game.ReplicatedFirst:FindFirstChild("doiii") then
+    game.ReplicatedFirst:FindFirstChild("doiii").Enabled = false
+end
+
 local cash = {}
 local markers = {}
 
