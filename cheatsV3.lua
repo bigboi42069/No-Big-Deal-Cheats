@@ -1,5 +1,5 @@
 -- Settings -----------------------------------------------------------------------------------------------------
-local toggleKey = Enum.KeyCode.RightBracket
+local toggleKey = Enum.KeyCode.P
 local shutdownKey = nil
 local minESPsize = 2
 local lazerWidth = 0.05
