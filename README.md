@@ -1,3 +1,12 @@
+# No-Big-Deal-Cheats-V3-by-Eri
+Cheats for the roblox game No Big Deal by Eri.
+
+
+P to open the menu
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Eri-Yoshimi/No-Big-Deal-Cheats-by-Eri/refs/heads/main/cheatsV3.lua", true))();
+
+
 # No-Big-Deal-Cheats-V2-by-Eri
 Cheats for the roblox game No Big Deal by Eri.
 
