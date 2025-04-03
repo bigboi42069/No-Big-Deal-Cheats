@@ -427,6 +427,7 @@ createESPButton("Seltzer Bottle ESP", "bottle", "Fluid", Color3.new(0.666667, 0,
 
 espModule:AddDivider()
 
+local useTeamColor, useTeamColorToggled = espModule:AddToggle("Use Team Colors")
 local PlayerESP, playerESPtoggled = espModule:AddToggle("Player ESP")
 local createdPlayerESPs = {}
 PlayerESP.Activated:Connect(function()
@@ -439,19 +440,21 @@ PlayerESP.Activated:Connect(function()
 	for i, p in game.Players:GetPlayers() do
 		local playerChar = workspace:FindFirstChild(p.Name)
 		if playerChar then
+            local teamColor = Color3.new(1, 1, 1)
+            if playerChar:FindFirstChild("SuitBody"):FindFirstChild("Handle"):FindFirstChild("Jacket") and useTeamColorToggled:GetState() == true then
+                teamColor = playerChar:FindFirstChild("SuitBody"):FindFirstChild("Handle"):FindFirstChild("Jacket").Color
+            end
 			if playerChar:FindFirstChild("Head") then
-				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), Color3.new(1, 1, 1))
+				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), teamColor)
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
-				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Transparency = 0
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
 			if playerChar:FindFirstChild("Torso") then
-				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), teamColor)
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
-				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Transparency = 0
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
@@ -462,15 +465,19 @@ workspace.ChildAdded:Connect(function(c)
 	if playerESPtoggled:GetState() == false then return end
 	task.wait(1)
 	if game.Players:FindFirstChild(c.Name) and c:IsA("Model") then
+        local teamColor = Color3.new(1, 1, 1)
+        if c:FindFirstChild("SuitBody"):FindFirstChild("Handle"):FindFirstChild("Jacket") and useTeamColorToggled:GetState() == true then
+            teamColor = c:FindFirstChild("SuitBody"):FindFirstChild("Handle"):FindFirstChild("Jacket").Color
+        end
 		if c:FindFirstChild("Head") then
-			local createdESP = CreateESP(c:FindFirstChild("Head"), Color3.new(1, 1, 1))
+			local createdESP = CreateESP(c:FindFirstChild("Head"), teamColor)
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
 		if c:FindFirstChild("Torso") then
-			local createdESP = CreateESP(c:FindFirstChild("Torso"), Color3.new(1, 1, 1))
+			local createdESP = CreateESP(c:FindFirstChild("Torso"), teamColor)
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
