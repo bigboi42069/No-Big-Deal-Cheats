@@ -510,8 +510,6 @@ local miscModule = window:createNewModule("Miscellaneous")
 
 local removeExtraAssetsButton = miscModule:AddButton("Remove Extra Assets")
 
-local removeExtraAssetsButton = miscModule:AddButton("Remove Extra Assets")
-
 removeExtraAssetsButton.Activated:Connect(function()
     local Lighting = game:GetService("Lighting")
 
