@@ -55,8 +55,6 @@ local lazerWidth = 0.01
 -----------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------]]--
 
--- Actuall code down here!!! ------------------------------------------------------------------------------------
-
 -- Global Variables ---------------------------------------------------------------------------------------------
 local plr = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -74,9 +72,9 @@ end
 local Style = {
 	name = "No Big Deal script by CSWC",
 	size = UDim2.new(0, 600, 0, 420),
-	primaryColor = Color3.new(0.6, 0.6, 0.3),
+	primaryColor = Color3.new(0.4, 0.4, 0.3),
 	secondaryColor = Color3.new(0.5, 0.5, 0.3),
-	backgroundColor = Color3.new(0, 0, 0),
+	backgroundColor = Color3.new(0, 0.2, 0.4),
 	draggable = true,
 	centered = false,
 	freemouse = true,
@@ -512,36 +510,41 @@ local miscModule = window:createNewModule("Miscellaneous")
 
 local removeExtraAssetsButton = miscModule:AddButton("Remove Extra Assets")
 
+local removeExtraAssetsButton = miscModule:AddButton("Remove Extra Assets")
+
 removeExtraAssetsButton.Activated:Connect(function()
     local Lighting = game:GetService("Lighting")
 
-    -- Disable global shadows
     Lighting.GlobalShadows = false
 
-    -- Set fullbright style lighting with dim ambient light
-    Lighting.Ambient = Color3.new(0.1, 0.1, 0.1)
+    Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
     Lighting.Brightness = 1
-    Lighting.OutdoorAmbient = Color3.new(0.1, 0.1, 0.1)
+    Lighting.OutdoorAmbient = Color3.new(0.5, 0.5, 0.5)
 
-    -- Loop through all descendants in the workspace
     for _, obj in pairs(workspace:GetDescendants()) do
-		wait()
-        -- Existing cleanup for specific objects
         if obj.Name == "BulletHole2" or obj.Name == "Casing" then
             obj:Destroy()
         end
+    end
 
-        -- Disable all self-sourced lights
+    for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
             obj.Enabled = false
-        end
-
-        -- Disable all particle emitters
-        if obj:IsA("ParticleEmitter") then
+        elseif obj:IsA("ParticleEmitter") then
             obj.Enabled = false
         end
     end
+
+    local streetLightsFolder = workspace:FindFirstChild("StreetLights")
+    if streetLightsFolder then
+        for _, lightObj in pairs(streetLightsFolder:GetDescendants()) do
+            if lightObj:IsA("PointLight") or lightObj:IsA("SpotLight") or lightObj:IsA("SurfaceLight") then
+                lightObj.Enabled = false
+            end
+        end
+    end
 end)
+
 
 local baseTeamNames = {
 	"Alamont",
