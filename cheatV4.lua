@@ -2,7 +2,7 @@
 local toggleKey = Enum.KeyCode.P
 local shutdownKey = nil
 local minESPsize = 1
-local lazerWidth = 0.1
+local lazerWidth = 0.01
 -----------------------------------------------------------------------------------------------------------------
 
 --[[-------------------------------------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ local lazerWidth = 0.1
     i      ,          \|     '|:::i°   ;      ';:::/:`::^*:´;      i::';'‘
     |     ,'`,                i:;'' ‚   i       `;/::::::::,·´      ';:/'‘ 
     'i    'i:::i',             ';/'      ';         '` *^*'´         .'/‘   
-    'i     ;::/ \           ;/'         '\                         /     
+    'i     ;::/ \           ;/'         '\                         /     d
      \    'i/    '`·,      ,''             `·,                ,-·´ '      
       '`~´         '`·–·'´'                 '`*~·––·~^'´  '          
                         ‘                        '                      
@@ -74,8 +74,8 @@ end
 local Style = {
 	name = "No Big Deal script by CSWC",
 	size = UDim2.new(0, 600, 0, 420),
-	primaryColor = Color3.new(0.6, 0.5, 0.3),
-	secondaryColor = Color3.new(0.7, 0.6, 0.4),
+	primaryColor = Color3.new(0.6, 0.6, 0.3),
+	secondaryColor = Color3.new(0.5, 0.5, 0.3),
 	backgroundColor = Color3.new(0, 0, 0),
 	draggable = true,
 	centered = false,
@@ -86,337 +86,297 @@ local Style = {
 	toggleBind = toggleKey,
 }
 
+-- Init window
 local window = library:Initialize(Style)
 
 if shutdownKey ~= nil then
-	game:GetService("UserInputService").InputBegan:Connect(function(key)
-		if key.KeyCode == shutdownKey then
-			window:Destroy()
-		end
-	end)
+    UIS.InputBegan:Connect(function(input)
+        if input.KeyCode == shutdownKey then
+            window:Destroy()
+        end
+    end)
 end
 
--- Functions ----------------------------------------------------------------------------------------------------
+-- Caches & Vars
 local ESPCache = {}
 local espTextVisible = false
 local borderThickness = 2
 
+-- ESP Creation
 local function CreateESP(basepart, color)
-	local newEspGui = Instance.new("BillboardGui", window.GUI)
-	newEspGui.Adornee = basepart
-	newEspGui.AlwaysOnTop = true
-	newEspGui.ResetOnSpawn = false
-	task.delay(5, function()
-		newEspGui.ResetOnSpawn = true
-	end)
-	local espSize = basepart.Size.X > basepart.Size.Z and basepart.Size.X or basepart.Size.Z
-	newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
-	local espFrame = Instance.new("TextLabel", newEspGui)
-	espFrame.Text = string.upper(string.sub(basepart.Parent.Name, 1, 1))
-	espFrame.TextTransparency = espTextVisible and 0 or 1
-	espFrame.TextScaled = true
-	espFrame.Size = UDim2.new(1, 0, 1, 0)
-	espFrame.BackgroundTransparency = 1
-	local newStroke = Instance.new("UIStroke", espFrame)
-	newStroke.Transparency = espTextVisible and 1 or 0
-	if color then
-		newStroke.Color = color
-		espFrame.TextColor3 = color
-	else
-		newStroke.Color = basepart.Color
-		espFrame.TextColor3 = basepart.Color
-	end
-	newStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	newStroke.LineJoinMode = Enum.LineJoinMode.Miter
-	newStroke.Thickness = borderThickness
-	table.insert(ESPCache, newEspGui)
+    if not basepart or not basepart:IsA("BasePart") then return end
 
-	return newEspGui
+    local newEspGui = Instance.new("BillboardGui")
+    newEspGui.Adornee = basepart
+    newEspGui.AlwaysOnTop = true
+    newEspGui.ResetOnSpawn = false
+    newEspGui.Parent = window.GUI
+
+    task.delay(5, function() 
+        if newEspGui then newEspGui.ResetOnSpawn = true end 
+    end)
+
+    local espSize = math.max(basepart.Size.X, basepart.Size.Z, 2)
+    newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
+
+    local espFrame = Instance.new("TextLabel")
+    espFrame.Text = string.upper(string.sub(basepart.Parent.Name, 1, 1))
+    espFrame.TextTransparency = espTextVisible and 0 or 1
+    espFrame.TextScaled = true
+    espFrame.Size = UDim2.new(1, 0, 1, 0)
+    espFrame.BackgroundTransparency = 1
+    espFrame.Parent = newEspGui
+
+    local newStroke = Instance.new("UIStroke")
+    newStroke.Transparency = espTextVisible and 1 or 0
+    newStroke.Color = color or basepart.Color
+    espFrame.TextColor3 = newStroke.Color
+    newStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    newStroke.LineJoinMode = Enum.LineJoinMode.Miter
+    newStroke.Thickness = borderThickness
+    newStroke.Parent = espFrame
+
+    table.insert(ESPCache, newEspGui)
+    return newEspGui
 end
 
+-- Look at Board
 local function lookAtBoard(board)
-	local connection
-	local goin = true
+    if not board or not board:IsA("BasePart") then return end
+    local connection
+    local active = true
 
-	task.delay(5, function()
-		goin = false
-		if connection then
-			connection:Disconnect()
-		end
-	end)
+    task.delay(5, function()
+        active = false
+        if connection then connection:Disconnect() end
+    end)
 
-	connection = RunService.RenderStepped:Connect(function()
-		if goin then
-			camera.CFrame = CFrame.new(board.CFrame.Position + board.CFrame.LookVector * 10, board.CFrame.Position)
-		end
-	end)
+    connection = RunService.RenderStepped:Connect(function()
+        if active then
+            camera.CFrame = CFrame.new(board.CFrame.Position + board.CFrame.LookVector * 10, board.CFrame.Position)
+        end
+    end)
 end
 
+-- Lazers
 local raylazertype = true
 local function addLaser(attachment: Attachment)
-	if not attachment or not attachment:IsA("Attachment") then
-		return
-	end
+    if not attachment or not attachment:IsA("Attachment") then return end
 
-	local laserPart = Instance.new("Part")
-	laserPart.Parent = workspace
-	laserPart.Anchored = true
-	laserPart.CanCollide = false
-	laserPart.CastShadow = false
-	laserPart.Material = Enum.Material.Neon
-	laserPart.Color = Color3.fromRGB(255, 0, 0)
-	laserPart.Size = Vector3.new(lazerWidth, lazerWidth, 1000)
+    local laserPart = Instance.new("Part")
+    laserPart.Anchored = true
+    laserPart.CanCollide = false
+    laserPart.CastShadow = false
+    laserPart.Material = Enum.Material.Neon
+    laserPart.Color = Color3.fromRGB(255, 0, 0)
+    laserPart.Size = Vector3.new(lazerWidth, lazerWidth, 1000)
+    laserPart.Parent = workspace
 
-	local function updateLaser()
-		if not attachment or not attachment.Parent then
-			laserPart:Destroy()
-			return
-		end
+    local function updateLaser()
+        if not attachment or not attachment.Parent then
+            laserPart:Destroy()
+            return
+        end
 
-		local startPos = attachment.WorldCFrame.Position
-		local direction = attachment.WorldCFrame.LookVector * 5000
-		local rayOrigin = startPos
-		local rayDirection = direction
+        local startPos = attachment.WorldCFrame.Position
+        local direction = attachment.WorldCFrame.LookVector * 5000
 
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = {attachment.Parent.Parent, laserPart, workspace:FindFirstChild(plr.Name)}
-		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-		raycastParams.IgnoreWater = true
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {attachment.Parent.Parent, laserPart, workspace:FindFirstChild(plr.Name)}
+        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+        raycastParams.IgnoreWater = true
 
-		local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+        local result = workspace:Raycast(startPos, direction, raycastParams)
+        local endPoint = result and result.Position or (startPos + direction)
+        local laserLength = (endPoint - startPos).Magnitude
 
-		if raycastResult then
-			local hitPoint = raycastResult.Position
-			local laserLength = (hitPoint - startPos).Magnitude
+        laserPart.Size = Vector3.new(lazerWidth, lazerWidth, laserLength)
+        laserPart.CFrame = CFrame.new(startPos, endPoint) * CFrame.new(0, 0, -laserLength / 2)
+    end
 
-			laserPart.Size = Vector3.new(lazerWidth, lazerWidth, laserLength)
-			laserPart.CFrame = CFrame.new(startPos, hitPoint) * CFrame.new(0, 0, -laserLength / 2)
-		else
-			local maxEnd = startPos + direction
-			local laserLength = (maxEnd - startPos).Magnitude
-
-			laserPart.Size = Vector3.new(lazerWidth, lazerWidth, laserLength)
-			laserPart.CFrame = CFrame.new(startPos, maxEnd) * CFrame.new(0, 0, -laserLength / 2)
-		end
-	end
-	
-	if raylazertype then
-		game:GetService("RunService").Heartbeat:Connect(updateLaser)
-	else
-		RunService.Heartbeat:Connect(function(dt)
-			laserPart.CFrame = attachment.WorldCFrame + (attachment.WorldCFrame.LookVector * laserPart.Size.Z / 2)
-		end)
-	end
+    if raylazertype then
+        RunService.Heartbeat:Connect(updateLaser)
+    else
+        RunService.Heartbeat:Connect(function()
+            if not attachment or not attachment.Parent then 
+                laserPart:Destroy()
+                return 
+            end
+            laserPart.CFrame = attachment.WorldCFrame * CFrame.new(0, 0, -laserPart.Size.Z/2)
+        end)
+    end
 end
 
-if game.ReplicatedFirst:FindFirstChild("first") then
-	--game.ReplicatedFirst:FindFirstChild("first").Enabled = false
-end
-
+-- Cash system
 local cash = {}
 local markers = {}
+local showGroups = false
 
-local function getDistance(part1, part2)
-	return (part1.Position - part2.Position).Magnitude
+local function getDistance(p1, p2)
+    return (p1.Position - p2.Position).Magnitude
 end
 
 local function getAveragePosition(group)
-	local totalPosition = Vector3.new(0, 0, 0)
-	local count = #group
-
-	for _, obj in ipairs(group) do
-		totalPosition = totalPosition + obj.Position
-	end
-
-	return totalPosition / count
+    local total = Vector3.zero
+    for _, obj in ipairs(group) do
+        total += obj.Position
+    end
+    return total / #group
 end
 
-local showGroups = false
 local function updateGroupMarkers(groups)
-	-- Remove extra markers
-	while #markers > #groups do
-		local marker = table.remove(markers)
-		if marker.marker and marker.text then
-			marker.marker:Destroy()
-			marker.text.Parent:Destroy()
-		end
-	end
+    while #markers > #groups do
+        local marker = table.remove(markers)
+        if marker then
+            marker.marker:Destroy()
+            marker.text.Parent:Destroy()
+        end
+    end
 
-	-- Update or create markers
-	for i, group in ipairs(groups) do
-		if #group > 0 then -- Prevent markers from staying if the group is empty
-			local avgPosition = getAveragePosition(group) + Vector3.new(0, 100, 0)
+    for i, group in ipairs(groups) do
+        if #group > 0 then
+            local avg = getAveragePosition(group) + Vector3.new(0, 100, 0)
 
-			if markers[i] then
-				--markers[i].marker.Position = avgPosition
-				markers[i].marker.StudsOffsetWorldSpace = avgPosition
-				markers[i].text.Text = "$"..#group
-			else
-				--local marker = Instance.new("Part")
-				--marker.Size = Vector3.new(5, 5, 5)
-				--marker.Position = avgPosition
-				--marker.Anchored = true
-				--marker.CanCollide = false
-				--marker.Transparency = 1
-				--marker.Material = Enum.Material.Neon
-				--marker.Parent = window.GUI
+            if markers[i] then
+                markers[i].marker.StudsOffsetWorldSpace = avg
+                markers[i].text.Text = "$"..#group
+            else
+                local newBill = Instance.new("BillboardGui")
+                newBill.StudsOffsetWorldSpace = avg
+                newBill.AlwaysOnTop = true
+                newBill.ResetOnSpawn = false
+                newBill.Size = UDim2.new(0, 50, 0, 50)
+                newBill.Parent = window.GUI
+                task.delay(5, function() if newBill then newBill.ResetOnSpawn = true end end)
 
-				local newEspGui = Instance.new("BillboardGui", window.GUI)
-				newEspGui.StudsOffsetWorldSpace = avgPosition
-				--newEspGui.Adornee = marker
-				newEspGui.AlwaysOnTop = true
-				newEspGui.ResetOnSpawn = false
-				task.delay(5, function()
-					newEspGui.ResetOnSpawn = true
-				end)
-				newEspGui.Size = UDim2.new(0, 50, 0, 50)
+                local markerText = Instance.new("TextLabel")
+                markerText.TextScaled = true
+                markerText.Size = UDim2.new(1,0,1,0)
+                markerText.BackgroundTransparency = 1
+                markerText.TextColor3 = Color3.new(0.33, 1, 0)
+                markerText.TextTransparency = showGroups and 0 or 1
+                markerText.Text = "$"..#group
+                markerText.Parent = newBill
 
-				local markerText = Instance.new("TextLabel", newEspGui)
-				markerText.TextScaled = true
-				markerText.Size = UDim2.new(1, 0, 1, 0)
-				markerText.BackgroundTransparency = 1
-				markerText.TextColor3 = Color3.new(0.333333, 1, 0)
-				markerText.TextTransparency = showGroups and 0 or 1
-
-				markerText.Text = "$"..#group
-
-				markers[i] = {marker = newEspGui, text = markerText}
-				--markers[i] = {marker = marker, text = markerText}
-			end
-		else
-			-- If the group is empty, destroy the marker
-			if markers[i] then
-				markers[i].marker:Destroy()
-				markers[i].text.Parent:Destroy()
-				table.remove(markers, i)
-			end
-		end
-	end
+                markers[i] = {marker = newBill, text = markerText}
+            end
+        elseif markers[i] then
+            markers[i].marker:Destroy()
+            markers[i].text.Parent:Destroy()
+            table.remove(markers, i)
+        end
+    end
 end
 
 local function groupCashObjects()
-	local groups = {}
-	local visited = {}
-
-	for i, c in cash do
-		if c == nil or c.Parent == nil or c.Parent.Parent == nil then
-			table.remove(cash, i)
-			return
-		end
-	end
-
-	for _, c in ipairs(cash) do
-		if not visited[c] then
-			local group = {c}
-			visited[c] = true
-
-			for _, other in ipairs(cash) do
-				if not visited[other] and getDistance(c, other) <= 25 then
-					table.insert(group, other)
-					visited[other] = true
-				end
-			end
-
-			table.insert(groups, group)
-		end
-	end
-
-	updateGroupMarkers(groups)
+    local groups, visited = {}, {}
+    for i = #cash,1,-1 do
+        local c = cash[i]
+        if not c or not c.Parent or not c.Parent.Parent then
+            table.remove(cash, i)
+        end
+    end
+    for _, c in ipairs(cash) do
+        if not visited[c] then
+            local group = {c}
+            visited[c] = true
+            for _, other in ipairs(cash) do
+				wait(0.01)
+                if not visited[other] and getDistance(c, other) <= 25 then
+                    table.insert(group, other)
+                    visited[other] = true
+                end
+            end
+            table.insert(groups, group)
+        end
+    end
+    updateGroupMarkers(groups)
 end
 
--- Scan for existing cash in workspace
+-- Init cash scan
 for _, d in ipairs(workspace:GetDescendants()) do
-	if string.lower(d.Name) == "cash" and d:IsA("Model") then
-		local part = d:FindFirstChild("Root")
-		if part and part:IsA("BasePart") then
-			table.insert(cash, part)
-		end
-	end
+    if d:IsA("Model") and d.Name:lower() == "cash" then
+        local part = d:FindFirstChild("Root")
+        if part and part:IsA("BasePart") then table.insert(cash, part) end
+    end
 end
-
--- Detect new cash objects
 workspace.DescendantAdded:Connect(function(d)
-	task.wait(1) -- Small delay to allow the object to be fully initialized
-	if string.lower(d.Name) == "cash" and d:IsA("Model") then
-		local part = d:FindFirstChild("Root")
-		if part and part:IsA("BasePart") then
-			table.insert(cash, part)
-		end
-	end
+    task.wait(1)
+    if d:IsA("Model") and d.Name:lower() == "cash" then
+        local part = d:FindFirstChild("Root")
+        if part and part:IsA("BasePart") then table.insert(cash, part) end
+    end
 end)
-
--- Continuously update groups and markers
 RunService.Heartbeat:Connect(groupCashObjects)
 
--- Buttons ------------------------------------------------------------------------------------------------------
+-- ESP Module
 local espModule = window:createNewModule("ESP")
-
 local function createESPButton(ButtonText, lookfor, bodyPart, color)
-	local createdESPs = {}
-
-	local newESPButton, newESPtoggled = espModule:AddToggle(ButtonText)
-	newESPButton.Activated:Connect(function()
-		if newESPtoggled:GetState() == false then
-			for _, ce in createdESPs do
-				ce:Destroy()
-			end
-			return
-		end
-		for i, d in workspace:GetDescendants() do
-			if string.lower(d.Name) == lookfor and d:IsA("Model") then
-				local part = d:FindFirstChild(bodyPart)
-				if part:IsA("BasePart") then
-					local newESP = CreateESP(part, color)
-					table.insert(createdESPs, newESP)
-				end
-			end
-		end
-	end)
-	workspace.DescendantAdded:Connect(function(d)
-		if string.lower(d.Name) == lookfor and d:IsA("Model") then
-			if newESPtoggled:GetState() == false then return end
-			local part = d:FindFirstChild(bodyPart)
-			if part:IsA("BasePart") then
-				local newESP = CreateESP(part, color)
-				table.insert(createdESPs, newESP)
-			end
-		end
-	end)
+    local createdESPs = {}
+    local newBtn, newState = espModule:AddToggle(ButtonText)
+    newBtn.Activated:Connect(function()
+        if not newState:GetState() then
+            for _, ce in ipairs(createdESPs) do ce:Destroy() end
+            table.clear(createdESPs)
+            return end
+        for _, d in ipairs(workspace:GetDescendants()) do
+			wait(0.01)
+            if d:IsA("Model") and d.Name:lower() == lookfor then
+                local part = d:FindFirstChild(bodyPart)
+                if part and part:IsA("BasePart") then
+                    table.insert(createdESPs, CreateESP(part, color))
+                end
+            end
+        end
+    end)
+    workspace.DescendantAdded:Connect(function(d)
+        if not newState:GetState() then return end
+        if d:IsA("Model") and d.Name:lower() == lookfor then
+            local part = d:FindFirstChild(bodyPart)
+            if part and part:IsA("BasePart") then
+                table.insert(createdESPs, CreateESP(part, color))
+            end
+        end
+    end)
 end
 
+-- Toggle text on ESP
 local espTextToggle, espTextToggled = espModule:AddToggle("Use Text")
 espTextToggle.Activated:Connect(function()
-	espTextVisible = espTextToggled:GetState()
-	for i, v in ESPCache do
-		local espFrame = v:FindFirstChildOfClass("TextLabel")
-		if espFrame then
-			espFrame.TextTransparency = espTextToggled:GetState() and 0 or 1
-			local espBorder = v:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke")
-			if espBorder then
-				espBorder.Transparency = espTextToggled:GetState() and 1 or 0
-			end
-		end
-	end
+    espTextVisible = espTextToggled:GetState()
+    for _, v in ipairs(ESPCache) do
+		wait(0.01)
+        local espFrame = v:FindFirstChildOfClass("TextLabel")
+        if espFrame then
+            espFrame.TextTransparency = espTextVisible and 0 or 1
+            local espBorder = espFrame:FindFirstChildOfClass("UIStroke")
+            if espBorder then espBorder.Transparency = espTextVisible and 1 or 0 end
+        end
+    end
 end)
 
+-- Border thickness slider
 local thicknessSlider = espModule:AddSlider("ESP Border Thickness", 1, 4)
 thicknessSlider.OnValueChanged:Connect(function(value)
-	borderThickness = value
-	for i, v in ESPCache do
-		if v and v:FindFirstChildOfClass("TextLabel") and v:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke") then
-			v:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = value
-		end
-	end
+    borderThickness = value
+    for _, v in ipairs(ESPCache) do
+        local label = v:FindFirstChildOfClass("TextLabel")
+        if label then
+            local stroke = label:FindFirstChildOfClass("UIStroke")
+            if stroke then stroke.Thickness = value end
+        end
+    end
 end)
 
 espModule:AddDivider()
 
+-- Grouped cash toggle
 local groupedCash, groupedCashToggled = espModule:AddToggle("Grouped Cash")
 groupedCash.Activated:Connect(function()
-	showGroups = groupedCashToggled:GetState()
-	for i, gc in markers do
-		gc.text.TextTransparency = showGroups and 0 or 1
-	end
+    showGroups = groupedCashToggled:GetState()
+    for _, gc in ipairs(markers) do
+        gc.text.TextTransparency = showGroups and 0 or 1
+    end
 end)
 
 createESPButton("Cash ESP", "cash", "Root", Color3.new(0, 1, 0))
@@ -438,6 +398,7 @@ PlayerESP.Activated:Connect(function()
 		return
 	end
 	for i, p in game.Players:GetPlayers() do
+		wait(0.01)
 		local playerChar = workspace:FindFirstChild(p.Name)
 		if playerChar then
             local teamColor = Color3.new(1, 1, 1)
@@ -493,25 +454,43 @@ jjxenoFix.Activated:Connect(function()
 	raylazertype = not jjxenoFixToggled:GetState()
 end)
 
-local pistolLazers = lazerModule:AddButton("Pistol Lazers")
+local pistolLazers = lazerModule:AddButton("Handguns")
 pistolLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "Pistol" or g.Name == "Snub" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+		if g.Name == "Pistol" or g.Name == "Snub" or g.Name == "MAGNUM" or g.Name == "Deagle" or g.Name == "TheFix" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
 			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
 
-local kickLazers = lazerModule:AddButton("Kick-10 Lazers")
+local magnumLazers = lazerModule:AddButton("Shotguns")
+magnumLazers.Activated:Connect(function()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "DB" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
+end)
+
+local kickLazers = lazerModule:AddButton("Machine Guns")
 kickLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "ToolboxMAC10" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+		if g.Name == "Kick10" or g.Name == "PitchGun" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
 			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
 end)
 
-local carcosaLazers = lazerModule:AddButton("Carcosa Rifle Lazers")
+local aceLazers = lazerModule:AddButton("Assault Rifles")
+aceLazers.Activated:Connect(function()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "AceCarbine" or g.Name == "AK47" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
+end)
+
+local carcosaLazers = lazerModule:AddButton("Sniper Rifles")
 carcosaLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
 		if g.Name == "Sniper" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
@@ -520,28 +499,10 @@ carcosaLazers.Activated:Connect(function()
 	end
 end)
 
-local aceLazers = lazerModule:AddButton("Ace Lazers")
-aceLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "AceCarbine" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
-		end
-	end
-end)
-
-local magnumLazers = lazerModule:AddButton("Magnum Lazers")
-magnumLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "MAGNUM" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
-		end
-	end
-end)
-
 local allLazers = lazerModule:AddButton("All Lazers")
 allLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "ToolboxMAC10" or g.Name == "PitchGun" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM" or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator" or g.Name == "Forte" or g.Name == "Deagle") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM" or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator" or g.Name == "Forte" or g.Name == "Deagle") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
 			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
@@ -549,10 +510,43 @@ end)
 
 local miscModule = window:createNewModule("Miscellaneous")
 
+local removeExtraAssetsButton = miscModule:AddButton("Remove Extra Assets")
+
+removeExtraAssetsButton.Activated:Connect(function()
+    local Lighting = game:GetService("Lighting")
+
+    -- Disable global shadows
+    Lighting.GlobalShadows = false
+
+    -- Set fullbright style lighting with dim ambient light
+    Lighting.Ambient = Color3.new(0.1, 0.1, 0.1)
+    Lighting.Brightness = 1
+    Lighting.OutdoorAmbient = Color3.new(0.1, 0.1, 0.1)
+
+    -- Loop through all descendants in the workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+		wait()
+        -- Existing cleanup for specific objects
+        if obj.Name == "BulletHole2" or obj.Name == "Casing" then
+            obj:Destroy()
+        end
+
+        -- Disable all self-sourced lights
+        if obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj.Enabled = false
+        end
+
+        -- Disable all particle emitters
+        if obj:IsA("ParticleEmitter") then
+            obj.Enabled = false
+        end
+    end
+end)
+
 local baseTeamNames = {
 	"Alamont",
-	"Halfwell",
 	"Bergman",
+	"Halfwell",
 	"Renetti",
 	"Yoromoto",
 }
@@ -679,7 +673,7 @@ trollModule:AddText("Get in a driver seat in a car and toggle this on to start k
 local carKill, carKillToggled = trollModule:AddToggle("Car Kill")
 carKill.Activated:Connect(function()
 	task.spawn(function()
-		while wait(math.random(5, 25)/100) and plr.Character and carKillToggled:GetState() == true do
+		while wait(math.random(5, 25)/50) and plr.Character and carKillToggled:GetState() == true do
 			local randmPLR: Player = game.Players:GetPlayers()[math.random(1, #game.Players:GetChildren())]
 			if randmPLR.Character == nil and randmPLR ~= game.Players.LocalPlayer then continue end
 			if randmPLR.Character:GetPivot().Y <= -100 then continue end
@@ -694,4 +688,3 @@ carKill.Activated:Connect(function()
 		end
 	end)
 end)
------------------------------------------------------------------------------------------------------------------
