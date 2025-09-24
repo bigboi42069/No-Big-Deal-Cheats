@@ -2,7 +2,7 @@
 local toggleKey = Enum.KeyCode.P
 local shutdownKey = nil
 local minESPsize = 1
-local lazerWidth = 0.01
+local lazerWidth = 0.025
 -----------------------------------------------------------------------------------------------------------------
 
 --[[-------------------------------------------------------------------------------------------------------------
@@ -473,7 +473,7 @@ end)
 local kickLazers = lazerModule:AddButton("Machine Guns")
 kickLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if g.Name == "Kick10" or g.Name == "PitchGun" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+		if g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Jericho" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
 			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
@@ -497,10 +497,10 @@ carcosaLazers.Activated:Connect(function()
 	end
 end)
 
-local allLazers = lazerModule:AddButton("All Lazers")
+local allLazers = lazerModule:AddButton("All Guns")
 allLazers.Activated:Connect(function()
 	for i, g in workspace:GetChildren() do
-		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM" or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator" or g.Name == "Forte" or g.Name == "Deagle") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "Jericho" or g.Name == "AK47" or g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM" or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator" or g.Name == "Forte" or g.Name == "Deagle") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
 			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
 		end
 	end
@@ -688,4 +688,5 @@ carKill.Activated:Connect(function()
 			if plr.Character:FindFirstChild("HumanoidRootPart") then plr.Character:FindFirstChild("HumanoidRootPart").Velocity = Vector3.new(0, 0, 0) end
 		end
 	end)
+end)
 end)
