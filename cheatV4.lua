@@ -1,8 +1,8 @@
 -- Settings -----------------------------------------------------------------------------------------------------
 local toggleKey = Enum.KeyCode.P
 local shutdownKey = nil
-local minESPsize = 2
-local lazerWidth = 0.05
+local minESPsize = 1
+local lazerWidth = 0.1
 -----------------------------------------------------------------------------------------------------------------
 
 --[[-------------------------------------------------------------------------------------------------------------
@@ -74,8 +74,8 @@ end
 local Style = {
 	name = "No Big Deal script by CSWC",
 	size = UDim2.new(0, 600, 0, 420),
-	primaryColor = Color3.new(0.615686, 0.47451, 0.305882),
-	secondaryColor = Color3.new(0.670588, 0.584314, 0.388235),
+	primaryColor = Color3.new(0.6, 0.5, 0.3),
+	secondaryColor = Color3.new(0.7, 0.6, 0.4),
 	backgroundColor = Color3.new(0, 0, 0),
 	draggable = true,
 	centered = false,
@@ -99,7 +99,7 @@ end
 -- Functions ----------------------------------------------------------------------------------------------------
 local ESPCache = {}
 local espTextVisible = false
-local borderThickness = 1
+local borderThickness = 2
 
 local function CreateESP(basepart, color)
 	local newEspGui = Instance.new("BillboardGui", window.GUI)
@@ -493,145 +493,58 @@ jjxenoFix.Activated:Connect(function()
 	raylazertype = not jjxenoFixToggled:GetState()
 end)
 
--- Enabled flags for each type of lazer; each controls its timed repeat state.
-local pistolLazersEnabled = false
-local kickLazersEnabled = false
-local carcosaLazersEnabled = false
-local aceLazersEnabled = false
-local magnumLazersEnabled = false
-local allLazersEnabled = false
-
--- Buttons for each type (add all if needed)
-local pistolLazers   = lazerModule:AddButton("Pistol Lazers")
-local kickLazers     = lazerModule:AddButton("Kick-10 Lazers")
-local carcosaLazers  = lazerModule:AddButton("Carcosa Rifle Lazers")
-local aceLazers      = lazerModule:AddButton("Ace Lazers")
-local magnumLazers   = lazerModule:AddButton("Magnum Lazers")
-local allLazers      = lazerModule:AddButton("All Lazers")
-
--- Helper function for each laser type, keeps code DRY and clear
-local function doPistolLazers()
-    for i, g in workspace:GetChildren() do
-        if (g.Name == "Pistol" or g.Name == "Snub")
-            and g:FindFirstChild("Root")
-            and g.Root:FindFirstChild("Muzzle") then
-            addLaser(g.Root.Muzzle)
-        end
-    end
-end
-
-local function doKickLazers()
-    for i, g in workspace:GetChildren() do
-        if g.Name == "ToolboxMAC10"
-            and g:FindFirstChild("Root")
-            and g.Root:FindFirstChild("Muzzle") then
-            addLaser(g.Root.Muzzle)
-        end
-    end
-end
-
-local function doCarcosaLazers()
-    for i, g in workspace:GetChildren() do
-        if g.Name == "Sniper"
-            and g:FindFirstChild("Root")
-            and g.Root:FindFirstChild("Muzzle") then
-            addLaser(g.Root.Muzzle)
-        end
-    end
-end
-
-local function doAceLazers()
-    for i, g in workspace:GetChildren() do
-        if g.Name == "AceCarbine"
-            and g:FindFirstChild("Root")
-            and g.Root:FindFirstChild("Muzzle") then
-            addLaser(g.Root.Muzzle)
-        end
-    end
-end
-
-local function doMagnumLazers()
-    for i, g in workspace:GetChildren() do
-        if g.Name == "MAGNUM"
-            and g:FindFirstChild("Root")
-            and g.Root:FindFirstChild("Muzzle") then
-            addLaser(g.Root.Muzzle)
-        end
-    end
-end
-
-local function doAllLazers()
-    for i, g in workspace:GetChildren() do
-        if (
-            g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB"
-            or g.Name == "AK47" or g.Name == "ToolboxMAC10" or g.Name == "PitchGun"
-            or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM"
-            or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator"
-            or g.Name == "Forte" or g.Name == "Deagle"
-        )
-        and g:FindFirstChild("Root")
-        and g.Root:FindFirstChild("Muzzle") then
-            addLaser(g.Root.Muzzle)
-        end
-    end
-end
-
--- Button click handlers: toggle timed repeats and fire once immediately
+local pistolLazers = lazerModule:AddButton("Pistol Lazers")
 pistolLazers.Activated:Connect(function()
-    -- Toggle timed repeat
-    pistolLazersEnabled = not pistolLazersEnabled
-    -- Always run once on click
-    doPistolLazers()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "Pistol" or g.Name == "Snub" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
 end)
 
+local kickLazers = lazerModule:AddButton("Kick-10 Lazers")
 kickLazers.Activated:Connect(function()
-    kickLazersEnabled = not kickLazersEnabled
-    doKickLazers()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "ToolboxMAC10" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
 end)
 
+local carcosaLazers = lazerModule:AddButton("Carcosa Rifle Lazers")
 carcosaLazers.Activated:Connect(function()
-    carcosaLazersEnabled = not carcosaLazersEnabled
-    doCarcosaLazers()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "Sniper" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
 end)
 
+local aceLazers = lazerModule:AddButton("Ace Lazers")
 aceLazers.Activated:Connect(function()
-    aceLazersEnabled = not aceLazersEnabled
-    doAceLazers()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "AceCarbine" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
 end)
 
+local magnumLazers = lazerModule:AddButton("Magnum Lazers")
 magnumLazers.Activated:Connect(function()
-    magnumLazersEnabled = not magnumLazersEnabled
-    doMagnumLazers()
+	for i, g in workspace:GetChildren() do
+		if g.Name == "MAGNUM" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
 end)
 
+local allLazers = lazerModule:AddButton("All Lazers")
 allLazers.Activated:Connect(function()
-    allLazersEnabled = not allLazersEnabled
-    doAllLazers()
-end)
-
--- Master timer loop (each enabled flag triggers matching effect every minute)
-spawn(function()
-    while true do
-        if pistolLazersEnabled then
-            doPistolLazers()
-        end
-        if kickLazersEnabled then
-            doKickLazers()
-        end
-        if carcosaLazersEnabled then
-            doCarcosaLazers()
-        end
-        if aceLazersEnabled then
-            doAceLazers()
-        end
-        if magnumLazersEnabled then
-            doMagnumLazers()
-        end
-        if allLazersEnabled then
-            doAllLazers()
-        end
-        wait(60) -- Delay one minute before repeating
-    end
+	for i, g in workspace:GetChildren() do
+		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "AK47" or g.Name == "ToolboxMAC10" or g.Name == "PitchGun" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM" or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator" or g.Name == "Forte" or g.Name == "Deagle") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
+			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+		end
+	end
 end)
 
 local miscModule = window:createNewModule("Miscellaneous")
@@ -740,7 +653,6 @@ end
 
 teleportModule:AddText("!!! WARNING: THIS IS VERY LIKELY TO GET YOU CAUGHT !!!")
 teleportModule:AddText("To teleport you have to be in ragdoll mode first.")
-
 local deadDropTPs = teleportModule:AddList("Place Teleports")
 if workspace:FindFirstChild("CurrentMap") then
 	for i, v in workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("DeadDrops"):GetChildren() do
