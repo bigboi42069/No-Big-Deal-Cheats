@@ -2,7 +2,7 @@
 local toggleKey = Enum.KeyCode.P
 local shutdownKey = nil
 local minESPsize = 1
-local lazerWidth = 0.025
+local lazerWidth = 0.02
 -----------------------------------------------------------------------------------------------------------------
 
 --[[-------------------------------------------------------------------------------------------------------------
@@ -97,6 +97,7 @@ end
 
 -- Caches & Vars
 local ESPCache = {}
+local createdPlayerESPs = {}
 local espTextVisible = false
 local borderThickness = 2
 
@@ -158,51 +159,85 @@ end
 
 -- Lazers
 local raylazertype = true
+
+local LaserManager = {
+    map = setmetatable({}, {__mode = "k"})
+}
+
+local function cleanupLaserEntry(attachment)
+    local entry = LaserManager.map[attachment]
+    if not entry then return end
+    if entry.conn and entry.conn.Connected then
+        entry.conn:Disconnect()
+    end
+    if entry.part and entry.part.Parent then
+        entry.part:Destroy()
+    end
+    LaserManager.map[attachment] = nil
+end
+
 local function addLaser(attachment: Attachment)
     if not attachment or not attachment:IsA("Attachment") then return end
 
+    if LaserManager.map[attachment] then
+        cleanupLaserEntry(attachment)
+    end
+
     local laserPart = Instance.new("Part")
+    laserPart.Name = "CSWC_LaserPart"
     laserPart.Anchored = true
     laserPart.CanCollide = false
     laserPart.CastShadow = false
     laserPart.Material = Enum.Material.Neon
     laserPart.Color = Color3.fromRGB(255, 0, 0)
-    laserPart.Size = Vector3.new(lazerWidth, lazerWidth, 1000)
+    laserPart.Size = Vector3.new(lazerWidth, lazerWidth, 100)
     laserPart.Parent = workspace
 
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.IgnoreWater = true
+
     local function updateLaser()
-        if not attachment or not attachment.Parent then
-            laserPart:Destroy()
+        if not attachment or not attachment.Parent or not laserPart or not laserPart.Parent then
+            cleanupLaserEntry(attachment)
             return
         end
+
+        local filterList = {}
+        local parentModel = attachment.Parent and attachment.Parent.Parent
+        if parentModel then table.insert(filterList, parentModel) end
+        table.insert(filterList, laserPart)
+        local ownModel = workspace:FindFirstChild(plr.Name)
+        if ownModel then table.insert(filterList, ownModel) end
+        raycastParams.FilterDescendantsInstances = filterList
 
         local startPos = attachment.WorldCFrame.Position
         local direction = attachment.WorldCFrame.LookVector * 5000
 
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterDescendantsInstances = {attachment.Parent.Parent, laserPart, workspace:FindFirstChild(plr.Name)}
-        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-        raycastParams.IgnoreWater = true
-
         local result = workspace:Raycast(startPos, direction, raycastParams)
         local endPoint = result and result.Position or (startPos + direction)
         local laserLength = (endPoint - startPos).Magnitude
+        if laserLength < 1 then laserLength = 10 end
 
         laserPart.Size = Vector3.new(lazerWidth, lazerWidth, laserLength)
         laserPart.CFrame = CFrame.new(startPos, endPoint) * CFrame.new(0, 0, -laserLength / 2)
     end
 
+    local conn
     if raylazertype then
-        RunService.Heartbeat:Connect(updateLaser)
+        conn = RunService.Heartbeat:Connect(updateLaser)
     else
-        RunService.Heartbeat:Connect(function()
-            if not attachment or not attachment.Parent then 
-                laserPart:Destroy()
-                return 
+        conn = RunService.Heartbeat:Connect(function()
+            if not attachment or not attachment.Parent then
+                cleanupLaserEntry(attachment)
+                return
             end
-            laserPart.CFrame = attachment.WorldCFrame * CFrame.new(0, 0, -laserPart.Size.Z/2)
+            if laserPart and laserPart.Parent then
+                laserPart.CFrame = attachment.WorldCFrame * CFrame.new(0, 0, -laserPart.Size.Z/2)
+            end
         end)
     end
+    LaserManager.map[attachment] = { part = laserPart, conn = conn }
 end
 
 -- Cash system
@@ -234,7 +269,6 @@ local function updateGroupMarkers(groups)
     for i, group in ipairs(groups) do
         if #group > 0 then
             local avg = getAveragePosition(group) + Vector3.new(0, 100, 0)
-
             if markers[i] then
                 markers[i].marker.StudsOffsetWorldSpace = avg
                 markers[i].text.Text = "$"..#group
@@ -246,7 +280,6 @@ local function updateGroupMarkers(groups)
                 newBill.Size = UDim2.new(0, 50, 0, 50)
                 newBill.Parent = window.GUI
                 task.delay(5, function() if newBill then newBill.ResetOnSpawn = true end end)
-
                 local markerText = Instance.new("TextLabel")
                 markerText.TextScaled = true
                 markerText.Size = UDim2.new(1,0,1,0)
@@ -255,7 +288,6 @@ local function updateGroupMarkers(groups)
                 markerText.TextTransparency = showGroups and 0 or 1
                 markerText.Text = "$"..#group
                 markerText.Parent = newBill
-
                 markers[i] = {marker = newBill, text = markerText}
             end
         elseif markers[i] then
@@ -267,22 +299,27 @@ local function updateGroupMarkers(groups)
 end
 
 local function groupCashObjects()
-    local groups, visited = {}, {}
     for i = #cash,1,-1 do
         local c = cash[i]
-        if not c or not c.Parent or not c.Parent.Parent then
+        if not c or not c.Parent then
             table.remove(cash, i)
         end
     end
-    for _, c in ipairs(cash) do
+    local groups = {}
+    local visited = {}
+    for i = 1, #cash do
+        local c = cash[i]
+        if not c then continue end
         if not visited[c] then
-            local group = {c}
             visited[c] = true
-            for _, other in ipairs(cash) do
-				wait(0.01)
-                if not visited[other] and getDistance(c, other) <= 25 then
-                    table.insert(group, other)
-                    visited[other] = true
+            local group = {c}
+            for j = i+1, #cash do
+                local other = cash[j]
+                if other and not visited[other] then
+                    if getDistance(c, other) <= 25 then
+                        table.insert(group, other)
+                        visited[other] = true
+                    end
                 end
             end
             table.insert(groups, group)
@@ -298,6 +335,7 @@ for _, d in ipairs(workspace:GetDescendants()) do
         if part and part:IsA("BasePart") then table.insert(cash, part) end
     end
 end
+
 workspace.DescendantAdded:Connect(function(d)
     task.wait(1)
     if d:IsA("Model") and d.Name:lower() == "cash" then
@@ -305,7 +343,21 @@ workspace.DescendantAdded:Connect(function(d)
         if part and part:IsA("BasePart") then table.insert(cash, part) end
     end
 end)
+
 RunService.Heartbeat:Connect(groupCashObjects)
+
+do
+    local last = 0
+    RunService.Heartbeat:Connect(function(dt)
+        last = last + dt
+        if last >= 0.1 then
+            last = 0
+            task.spawn(function()
+                groupCashObjects()
+            end)
+        end
+    end)
+end
 
 -- ESP Module
 local espModule = window:createNewModule("ESP")
@@ -314,15 +366,18 @@ local function createESPButton(ButtonText, lookfor, bodyPart, color)
     local newBtn, newState = espModule:AddToggle(ButtonText)
     newBtn.Activated:Connect(function()
         if not newState:GetState() then
-            for _, ce in ipairs(createdESPs) do ce:Destroy() end
+            for _, ce in ipairs(createdESPs) do
+                if ce and ce.Parent then ce:Destroy() end
+            end
             table.clear(createdESPs)
-            return end
+            return
+        end
         for _, d in ipairs(workspace:GetDescendants()) do
-			wait(0.01)
             if d:IsA("Model") and d.Name:lower() == lookfor then
                 local part = d:FindFirstChild(bodyPart)
                 if part and part:IsA("BasePart") then
-                    table.insert(createdESPs, CreateESP(part, color))
+                    local e = CreateESP(part, color)
+                    table.insert(createdESPs, e)
                 end
             end
         end
@@ -332,7 +387,8 @@ local function createESPButton(ButtonText, lookfor, bodyPart, color)
         if d:IsA("Model") and d.Name:lower() == lookfor then
             local part = d:FindFirstChild(bodyPart)
             if part and part:IsA("BasePart") then
-                table.insert(createdESPs, CreateESP(part, color))
+                local e = CreateESP(part, color)
+                table.insert(createdESPs, e)
             end
         end
     end)
@@ -356,14 +412,27 @@ end)
 -- Border thickness slider
 local thicknessSlider = espModule:AddSlider("ESP Border Thickness", 1, 4)
 thicknessSlider.OnValueChanged:Connect(function(value)
-    borderThickness = value
-    for _, v in ipairs(ESPCache) do
-        local label = v:FindFirstChildOfClass("TextLabel")
-        if label then
-            local stroke = label:FindFirstChildOfClass("UIStroke")
-            if stroke then stroke.Thickness = value end
-        end
-    end
+	borderThickness = value
+
+	for _, v in ipairs(ESPCache) do
+		local label = v:FindFirstChildOfClass("TextLabel")
+		if label then
+			local stroke = label:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Thickness = value
+			end
+		end
+	end
+
+	for _, v in ipairs(createdPlayerESPs) do
+		local label = v:FindFirstChildOfClass("TextLabel")
+		if label then
+			local stroke = label:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Thickness = value
+			end
+		end
+	end
 end)
 
 espModule:AddDivider()
@@ -387,7 +456,6 @@ espModule:AddDivider()
 
 local useTeamColor, useTeamColorToggled = espModule:AddToggle("Use Team Colors")
 local PlayerESP, playerESPtoggled = espModule:AddToggle("Player ESP")
-local createdPlayerESPs = {}
 PlayerESP.Activated:Connect(function()
 	if playerESPtoggled:GetState() == false then
 		for _, ce in createdPlayerESPs do
@@ -406,20 +474,21 @@ PlayerESP.Activated:Connect(function()
 			if playerChar:FindFirstChild("Head") then
 				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), teamColor)
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
-				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
 			if playerChar:FindFirstChild("Torso") then
 				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), teamColor)
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
-				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
 		end
 	end
 end)
+
 workspace.ChildAdded:Connect(function(c)
 	if playerESPtoggled:GetState() == false then return end
 	task.wait(1)
@@ -431,14 +500,14 @@ workspace.ChildAdded:Connect(function(c)
 		if c:FindFirstChild("Head") then
 			local createdESP = CreateESP(c:FindFirstChild("Head"), teamColor)
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
-			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
 		if c:FindFirstChild("Torso") then
 			local createdESP = CreateESP(c:FindFirstChild("Torso"), teamColor)
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
-			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = 1
+			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
@@ -452,56 +521,68 @@ jjxenoFix.Activated:Connect(function()
 	raylazertype = not jjxenoFixToggled:GetState()
 end)
 
-local pistolLazers = lazerModule:AddButton("Handguns")
-pistolLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "Pistol" or g.Name == "Snub" or g.Name == "MAGNUM" or g.Name == "Deagle" or g.Name == "TheFix" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+local function hasValidMuzzle(g)
+    if not g then return false end
+    local root = g:FindFirstChild("Root")
+    if not root then return false end
+    local muzzle = root:FindFirstChild("Muzzle")
+    return muzzle and muzzle:IsA("Attachment")
+end
+
+local handgunLazers = lazerModule:AddButton("Handguns")
+handgunLazers.Activated:Connect(function()
+	for i, g in ipairs(workspace:GetChildren()) do
+		if (g.Name == "Pistol" or g.Name == "Snub" or g.Name == "MAGNUM" or g.Name == "Deagle" or g.Name == "TheFix") and hasValidMuzzle(g) then
+			addLaser(g.Root.Muzzle)
 		end
 	end
 end)
 
-local magnumLazers = lazerModule:AddButton("Shotguns")
-magnumLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "DB" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+local shotgunLazers = lazerModule:AddButton("Shotguns")
+shotgunLazers.Activated:Connect(function()
+	for i, g in ipairs(workspace:GetChildren()) do
+		if (g.Name == "DB") and hasValidMuzzle(g) then
+			addLaser(g.Root.Muzzle)
 		end
 	end
 end)
 
-local kickLazers = lazerModule:AddButton("Machine Guns")
-kickLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Jericho" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+local machineLazers = lazerModule:AddButton("Machine Guns")
+machineLazers.Activated:Connect(function()
+	for i, g in ipairs(workspace:GetChildren()) do
+		if (g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Jericho") and hasValidMuzzle(g) then
+			addLaser(g.Root.Muzzle)
 		end
 	end
 end)
 
-local aceLazers = lazerModule:AddButton("Assault Rifles")
-aceLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "AceCarbine" or g.Name == "AK47" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+local assaultLazers = lazerModule:AddButton("Assault Rifles")
+assaultLazers.Activated:Connect(function()
+	for i, g in ipairs(workspace:GetChildren()) do
+		if (g.Name == "AceCarbine" or g.Name == "AK47") and hasValidMuzzle(g) then
+			addLaser(g.Root.Muzzle)
 		end
 	end
 end)
 
-local carcosaLazers = lazerModule:AddButton("Sniper Rifles")
-carcosaLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if g.Name == "Sniper" and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+local sniperLazers = lazerModule:AddButton("Sniper Rifles")
+sniperLazers.Activated:Connect(function()
+	for i, g in ipairs(workspace:GetChildren()) do
+		if (g.Name == "Sniper") and hasValidMuzzle(g) then
+			addLaser(g.Root.Muzzle)
 		end
 	end
 end)
 
 local allLazers = lazerModule:AddButton("All Guns")
 allLazers.Activated:Connect(function()
-	for i, g in workspace:GetChildren() do
-		if (g.Name == "Snub" or g.Name == "Pistol" or g.Name == "DB" or g.Name == "Jericho" or g.Name == "AK47" or g.Name == "Kick10" or g.Name == "PitchGun" or g.Name == "Sniper" or g.Name == "AceCarbine" or g.Name == "MAGNUM" or g.Name == "Strikeout" or g.Name == "TheFix" or g.Name == "Liquidator" or g.Name == "Forte" or g.Name == "Deagle") and g:FindFirstChild("Root") and g:FindFirstChild("Root"):FindFirstChild("Muzzle") then
-			addLaser(g:FindFirstChild("Root"):FindFirstChild("Muzzle"))
+	for i, g in ipairs(workspace:GetChildren()) do
+		local names = {
+            Snub=true, Pistol=true, DB=true, Jericho=true, AK47=true, Kick10=true, PitchGun=true,
+            Sniper=true, AceCarbine=true, MAGNUM=true, Strikeout=true, TheFix=true, Liquidator=true, Forte=true, Deagle=true
+        }
+		if names[g.Name] and hasValidMuzzle(g) then
+			addLaser(g.Root.Muzzle)
 		end
 	end
 end)
@@ -512,9 +593,7 @@ local removeExtraAssetsButton = miscModule:AddButton("Remove Extra Assets")
 
 removeExtraAssetsButton.Activated:Connect(function()
     local Lighting = game:GetService("Lighting")
-
     Lighting.GlobalShadows = false
-
     Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
     Lighting.Brightness = 1
     Lighting.OutdoorAmbient = Color3.new(0.5, 0.5, 0.5)
@@ -541,6 +620,12 @@ removeExtraAssetsButton.Activated:Connect(function()
             end
         end
     end
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            pcall(function() obj.Enabled = false end)
+        end
+    end
 end)
 
 
@@ -556,6 +641,7 @@ local lookAtMissionBoardList = miscModule:AddList("Look at board")
 for i, t in baseTeamNames do
 	lookAtMissionBoardList:AddListItem(t, i)
 end
+
 lookAtMissionBoardList.OnItemChanged:Connect(function(boardID)
 	local board = workspace:WaitForChild("CurrentMap"):WaitForChild("Round"):WaitForChild("Core"):WaitForChild("Bases"):WaitForChild(boardID):WaitForChild("MissionBoard")
 	lookAtBoard(board)
@@ -620,6 +706,7 @@ volumeSlider.OnValueChanged:Connect(function(value)
 		hearAllPlayersVolumeControl.Volume = value
 	end
 end)
+
 hearAllPlayersVolumeControl.Volume = volumeSlider:GetValue() or 0
 
 local removeVCWarning = miscModule:AddButton("Remove VC Warning Gui")
@@ -657,7 +744,6 @@ end
 deadDropTPs.OnItemChanged:Connect(function(place)
 	teleportTo(place)
 end)
-
 local baseTPs = teleportModule:AddList("Base Teleports")
 for i, t in baseTeamNames do
 	baseTPs:AddListItem(t, i)
