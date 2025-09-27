@@ -101,8 +101,7 @@ local createdPlayerESPs = {}
 local espTextVisible = false
 local borderThickness = 2
 
--- ESP Creation
-local function CreateESP(basepart, color)
+local function CreateESP(basepart, color, isPlayerESP)
     if not basepart or not basepart:IsA("BasePart") then return end
 
     local newEspGui = Instance.new("BillboardGui")
@@ -111,11 +110,13 @@ local function CreateESP(basepart, color)
     newEspGui.ResetOnSpawn = false
     newEspGui.Parent = window.GUI
 
-    task.delay(5, function() 
-        if newEspGui then newEspGui.ResetOnSpawn = true end 
+    task.delay(5, function()
+        if newEspGui then newEspGui.ResetOnSpawn = true end
     end)
 
-    local espSize = math.max(basepart.Size.X, basepart.Size.Z, 2)
+    -- Set ESP size: full size for players, half size for items
+    local baseSize = math.max(basepart.Size.X, basepart.Size.Z, 2)
+    local espSize = isPlayerESP and baseSize or baseSize * 0.5
     newEspGui.Size = UDim2.new(espSize, minESPsize, espSize, minESPsize)
 
     local espFrame = Instance.new("TextLabel")
@@ -268,7 +269,7 @@ local function updateGroupMarkers(groups)
 
     for i, group in ipairs(groups) do
         if #group > 0 then
-            local avg = getAveragePosition(group) + Vector3.new(0, 100, 0)
+            local avg = getAveragePosition(group) + Vector3.new(0, 2, 0)
             if markers[i] then
                 markers[i].marker.StudsOffsetWorldSpace = avg
                 markers[i].text.Text = "$"..#group
@@ -472,14 +473,14 @@ PlayerESP.Activated:Connect(function()
                 teamColor = playerChar:FindFirstChild("SuitBody"):FindFirstChild("Handle"):FindFirstChild("Jacket").Color
             end
 			if playerChar:FindFirstChild("Head") then
-				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), teamColor)
+				local createdESP = CreateESP(playerChar:FindFirstChild("Head"), teamColor, true)
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
 				table.insert(createdPlayerESPs, createdESP)
 			end
 			if playerChar:FindFirstChild("Torso") then
-				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), teamColor)
+				local createdESP = CreateESP(playerChar:FindFirstChild("Torso"), teamColor, true)
 				createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 				createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 				table.remove(ESPCache, table.find(ESPCache, createdESP))
@@ -498,14 +499,14 @@ workspace.ChildAdded:Connect(function(c)
             teamColor = c:FindFirstChild("SuitBody"):FindFirstChild("Handle"):FindFirstChild("Jacket").Color
         end
 		if c:FindFirstChild("Head") then
-			local createdESP = CreateESP(c:FindFirstChild("Head"), teamColor)
+			local createdESP = CreateESP(c:FindFirstChild("Head"), teamColor, true)
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
 			table.insert(createdPlayerESPs, createdESP)
 		end
 		if c:FindFirstChild("Torso") then
-			local createdESP = CreateESP(c:FindFirstChild("Torso"), teamColor)
+			local createdESP = CreateESP(c:FindFirstChild("Torso"), teamColor, true)
 			createdESP:FindFirstChildOfClass("TextLabel").TextTransparency = 1
 			createdESP:FindFirstChildOfClass("TextLabel"):FindFirstChildOfClass("UIStroke").Thickness = borderThickness
 			table.remove(ESPCache, table.find(ESPCache, createdESP))
@@ -769,7 +770,6 @@ carKill.Activated:Connect(function()
 				wait(math.random(0, 10) / 200)
 				plr.Character:PivotTo(plr.Character:GetPivot() + Vector3.new(0, 25, 0))
 			end
-
 			plr.Character:PivotTo(CFrame.new(0, 250, 0))
 			if plr.Character:FindFirstChild("HumanoidRootPart") then plr.Character:FindFirstChild("HumanoidRootPart").Velocity = Vector3.new(0, 0, 0) end
 		end
